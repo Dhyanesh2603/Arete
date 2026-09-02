@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/firebase_auth_service.dart';
 import '../../core/services/supabase_service.dart';
 import '../../domain/models/user_profile.dart';
 
@@ -33,9 +35,7 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState(isAuthenticated: false)) {
-    checkOAuthRedirect();
-  }
+  AuthNotifier() : super(const AuthState(isAuthenticated: false));
 
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -49,29 +49,56 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      final profile = await SupabaseService.signInWithPassword(
-        email: email.trim(),
-        password: password,
-      );
+      // 1. Authenticate with Firebase Auth
+      final fbUser = await FirebaseAuthService.signInWithEmail(
+          email.trim(), password);
 
-      if (profile != null) {
-        state = AuthState(
-          user: profile,
-          isAuthenticated: true,
-          isLoading: false,
+      final uid = fbUser?.uid ??
+          'usr-${email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+      final name = fbUser?.displayName ?? email.split('@').first;
+
+      var profile = await SupabaseService.fetchUserProfile(uid);
+      if (profile == null) {
+        profile = UserProfile(
+          id: uid,
+          name: name.isNotEmpty ? name : 'Developer',
+          email: email.trim(),
+          targetRole: 'Software Engineer & DSA Aspirant',
+          avatarColor: const Color(0xFF38BDF8),
+          streakDays: 0,
+          totalProblemsSolved: 0,
+          totalFocusHours: 0.0,
+          createdAt: DateTime.now(),
         );
-        return true;
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: 'Authentication failed. Please check your credentials.',
-        );
-        return false;
+        await SupabaseService.saveUserProfile(profile);
       }
+
+      state = AuthState(
+        user: profile,
+        isAuthenticated: true,
+        isLoading: false,
+      );
+      return true;
     } catch (e) {
+      // Fallback local per-user authentication
+      try {
+        final profile = await SupabaseService.signInWithPassword(
+          email: email.trim(),
+          password: password,
+        );
+        if (profile != null) {
+          state = AuthState(
+            user: profile,
+            isAuthenticated: true,
+            isLoading: false,
+          );
+          return true;
+        }
+      } catch (_) {}
+
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Unable to sign in: $e',
+        errorMessage: e.toString().replaceAll('Exception:', '').trim(),
       );
       return false;
     }
@@ -89,31 +116,54 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      final profile = await SupabaseService.signUp(
+      // 1. Create account in Firebase Auth
+      final fbUser = await FirebaseAuthService.signUpWithEmail(
+          name.trim(), email.trim(), password);
+
+      final uid = fbUser?.uid ??
+          'usr-${email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+
+      final profile = UserProfile(
+        id: uid,
         name: name.trim(),
         email: email.trim(),
-        password: password,
+        targetRole: 'Software Engineer & DSA Aspirant',
+        avatarColor: const Color(0xFF38BDF8),
+        streakDays: 0,
+        totalProblemsSolved: 0,
+        totalFocusHours: 0.0,
+        createdAt: DateTime.now(),
       );
 
-      if (profile != null) {
-        // Starts with clean 0 state
-        state = AuthState(
-          user: profile,
-          isAuthenticated: true,
-          isLoading: false,
-        );
-        return true;
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: 'Sign up failed. Please try again.',
-        );
-        return false;
-      }
+      await SupabaseService.saveUserProfile(profile);
+
+      state = AuthState(
+        user: profile,
+        isAuthenticated: true,
+        isLoading: false,
+      );
+      return true;
     } catch (e) {
+      // Fallback per-user database creation
+      try {
+        final profile = await SupabaseService.signUp(
+          name: name.trim(),
+          email: email.trim(),
+          password: password,
+        );
+        if (profile != null) {
+          state = AuthState(
+            user: profile,
+            isAuthenticated: true,
+            isLoading: false,
+          );
+          return true;
+        }
+      } catch (_) {}
+
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Unable to create account: $e',
+        errorMessage: e.toString().replaceAll('Exception:', '').trim(),
       );
       return false;
     }
@@ -122,47 +172,46 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await SupabaseService.signInWithGoogle();
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
-      return false;
-    }
-  }
+      // Trigger Firebase Google Sign-In Popup
+      final fbUser = await FirebaseAuthService.signInWithGoogle();
+      if (fbUser != null) {
+        var profile = await SupabaseService.fetchUserProfile(fbUser.uid);
+        if (profile == null) {
+          profile = UserProfile(
+            id: fbUser.uid,
+            name: fbUser.displayName.isNotEmpty ? fbUser.displayName : 'Google User',
+            email: fbUser.email,
+            targetRole: 'Software Engineer & DSA Aspirant',
+            avatarColor: const Color(0xFF38BDF8),
+            streakDays: 0,
+            totalProblemsSolved: 0,
+            totalFocusHours: 0.0,
+            createdAt: DateTime.now(),
+          );
+          await SupabaseService.saveUserProfile(profile);
+        }
 
-  Future<void> checkOAuthRedirect() async {
-    try {
-      final profile = await SupabaseService.checkOAuthRedirectSession();
-      if (profile != null) {
         state = AuthState(
           user: profile,
           isAuthenticated: true,
           isLoading: false,
         );
+        return true;
+      } else {
+        state = state.copyWith(isLoading: false);
+        return false;
       }
-    } catch (_) {}
-  }
-
-  Future<void> loginWithGoogleAccount({
-    required String name,
-    required String email,
-  }) async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    final profile = await SupabaseService.authenticateGoogleAccount(
-      name: name,
-      email: email,
-    );
-    state = AuthState(
-      user: profile,
-      isAuthenticated: true,
-      isLoading: false,
-    );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString().replaceAll('Exception:', '').trim(),
+      );
+      return false;
+    }
   }
 
   Future<void> logout() async {
+    await FirebaseAuthService.signOut();
     await SupabaseService.signOut();
     state = const AuthState(
       user: null,

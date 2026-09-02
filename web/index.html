@@ -1,36 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Arete — The platform for ambitious minds.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="arete_os">
+  <meta name="apple-mobile-web-app-title" content="Arete">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>arete_os</title>
+  <title>Arete</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase Compat Libraries for Web -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // User's Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCD1rcohw9R0oP78Niq7o09XpPO6JI9TU8",
+      authDomain: "arete-13874.firebaseapp.com",
+      projectId: "arete-13874",
+      storageBucket: "arete-13874.firebasestorage.app",
+      messagingSenderId: "352583612364",
+      appId: "1:352583612364:web:4e173356acf17ec8dd8f69",
+      measurementId: "G-SKN4HJVRKK"
+    };
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+    } catch (e) {
+      console.warn("Firebase initialization notice:", e);
+    }
+
+    // Google Sign-In with popup (prompts user with list of accounts)
+    window.firebaseSignInWithGoogle = async function() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await firebase.auth().signInWithPopup(provider);
+      return {
+        uid: result.user.uid,
+        displayName: result.user.displayName || "Google User",
+        email: result.user.email,
+        photoURL: result.user.photoURL || ""
+      };
+    };
+
+    // Email / Password Sign In
+    window.firebaseSignInWithEmail = async function(email, password) {
+      const result = await firebase.auth().signInWithEmailAndPassword(email, password);
+      return {
+        uid: result.user.uid,
+        displayName: result.user.displayName || email.split('@')[0],
+        email: result.user.email
+      };
+    };
+
+    // Email / Password Sign Up
+    window.firebaseSignUpWithEmail = async function(name, email, password) {
+      const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      if (name && result.user.updateProfile) {
+        await result.user.updateProfile({ displayName: name });
+      }
+      return {
+        uid: result.user.uid,
+        displayName: name || result.user.displayName || email.split('@')[0],
+        email: result.user.email
+      };
+    };
+
+    // Sign Out
+    window.firebaseSignOut = async function() {
+      await firebase.auth().signOut();
+    };
+
+    // Get Active User
+    window.firebaseGetCurrentUser = function() {
+      const user = firebase.auth().currentUser;
+      if (!user) return null;
+      return {
+        uid: user.uid,
+        displayName: user.displayName || user.email.split('@')[0],
+        email: user.email
+      };
+    };
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
