@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../views/analytics/analytics_view.dart';
+import '../views/auth/auth_view.dart';
 import '../views/calendar/calendar_view.dart';
 import '../views/coach/ai_coach_view.dart';
 import '../views/cohort/cohort_war_room_view.dart';
@@ -11,6 +12,7 @@ import '../views/focus/fullscreen_focus_view.dart';
 import '../views/goals/goals_view.dart';
 import '../views/habits/habits_view.dart';
 import '../views/knowledge/knowledge_view.dart';
+import '../views/landing/landing_view.dart';
 import '../views/projects/projects_view.dart';
 import '../views/resources/resources_view.dart';
 import '../views/settings/settings_view.dart';
@@ -18,8 +20,22 @@ import '../views/shell_scaffold.dart';
 import '../views/tasks/tasks_view.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/dashboard',
+  initialLocation: '/',
   routes: [
+    // Landing Page (Public)
+    GoRoute(
+      path: '/',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: LandingView(),
+      ),
+    ),
+    // Auth Page (Login / Sign Up / Guest Access)
+    GoRoute(
+      path: '/auth',
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: AuthView(),
+      ),
+    ),
     // Fullscreen Overlay for Distraction-Free Focus Mode
     GoRoute(
       path: '/focus',
@@ -36,7 +52,7 @@ final appRouter = GoRouter(
         child: MockInterviewView(),
       ),
     ),
-    // Main Shell Navigation with persistent Sidebar
+    // Main Shell Navigation with slideable Drawer Sidebar
     ShellRoute(
       builder: (context, state, child) {
         return ShellScaffold(

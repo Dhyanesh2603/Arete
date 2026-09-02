@@ -8,6 +8,7 @@ import '../providers/dsa_provider.dart';
 import '../providers/focus_session_provider.dart';
 import '../providers/projects_provider.dart';
 import '../providers/tasks_provider.dart';
+import '../../domain/models/task.dart';
 
 class CommandPaletteModal extends ConsumerStatefulWidget {
   const CommandPaletteModal({super.key});
@@ -186,7 +187,7 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
       if (query.isEmpty || t.title.toLowerCase().contains(query)) {
         items.add(_CommandItem(
           title: t.title,
-          subtitle: '${t.priority.name.toUpperCase()} - ${t.cognitiveTier.name}',
+          subtitle: '${t.priority.label} Priority ${t.projectTag != null ? "#${t.projectTag}" : ""}',
           category: 'TASKS',
           onSelect: () {
             ref.read(commandPaletteProvider.notifier).close();

@@ -247,29 +247,25 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: task.priority == 'P0' ? AppColors.roseBg : AppColors.surfaceHover,
+                  color: task.priority == 'High'
+                      ? const Color(0x22FB7185)
+                      : task.priority == 'Medium'
+                          ? const Color(0x22FBBF24)
+                          : const Color(0x2234D399),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  task.priority,
+                  task.priority.toUpperCase(),
                   style: AppTypography.monoBadge.copyWith(
                     fontSize: 9,
-                    color: task.priority == 'P0' ? AppColors.rose : AppColors.textMuted,
+                    color: task.priority == 'High'
+                        ? const Color(0xFFFB7185)
+                        : task.priority == 'Medium'
+                            ? const Color(0xFFFBBF24)
+                            : const Color(0xFF34D399),
                   ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.cyanBg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  task.cognitiveTier,
-                  style: AppTypography.monoBadge.copyWith(fontSize: 9, color: AppColors.cyan),
                 ),
               ),
               const Spacer(),

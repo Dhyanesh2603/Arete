@@ -1,12 +1,40 @@
-enum TaskPriority { p0, p1, p2 }
+import 'package:flutter/material.dart';
 
-enum CognitiveTier { deep3x, medium2x, shallow1x }
+enum TaskPriority { high, medium, low }
 
-enum EisenhowerQuadrant {
-  q1DoFirst, // Urgent & Important (P0 Deep Work)
-  q2Schedule, // Not Urgent & Important (P1 Strategic / Goals / Projects)
-  q3Delegate, // Urgent & Low Value (P2 Shallow / Quick Chores)
-  q4Eliminate // Backlog / Defer
+extension TaskPriorityExtension on TaskPriority {
+  String get label {
+    switch (this) {
+      case TaskPriority.high:
+        return 'High';
+      case TaskPriority.medium:
+        return 'Medium';
+      case TaskPriority.low:
+        return 'Low';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case TaskPriority.high:
+        return const Color(0xFFFB7185); // Rose Red
+      case TaskPriority.medium:
+        return const Color(0xFFFBBF24); // Amber Yellow
+      case TaskPriority.low:
+        return const Color(0xFF34D399); // Mint Green
+    }
+  }
+
+  Color get backgroundColor {
+    switch (this) {
+      case TaskPriority.high:
+        return const Color(0x22FB7185);
+      case TaskPriority.medium:
+        return const Color(0x22FBBF24);
+      case TaskPriority.low:
+        return const Color(0x2234D399);
+    }
+  }
 }
 
 class Task {
@@ -17,7 +45,6 @@ class Task {
   final String? projectId;
   final String? projectTag;
   final TaskPriority priority;
-  final CognitiveTier cognitiveTier;
   final int estimatedMinutes;
   final int estimatedPomodoros;
   final int loggedPomodoros;
@@ -33,8 +60,7 @@ class Task {
     this.milestoneTitle,
     this.projectId,
     this.projectTag,
-    this.priority = TaskPriority.p1,
-    this.cognitiveTier = CognitiveTier.medium2x,
+    this.priority = TaskPriority.medium,
     this.estimatedMinutes = 45,
     this.estimatedPomodoros = 1,
     this.loggedPomodoros = 0,
@@ -44,13 +70,6 @@ class Task {
     this.subtasks = const [],
   });
 
-  EisenhowerQuadrant get quadrant {
-    if (priority == TaskPriority.p0) return EisenhowerQuadrant.q1DoFirst;
-    if (priority == TaskPriority.p1) return EisenhowerQuadrant.q2Schedule;
-    if (cognitiveTier == CognitiveTier.shallow1x) return EisenhowerQuadrant.q3Delegate;
-    return EisenhowerQuadrant.q4Eliminate;
-  }
-
   Task copyWith({
     String? id,
     String? title,
@@ -59,7 +78,6 @@ class Task {
     String? projectId,
     String? projectTag,
     TaskPriority? priority,
-    CognitiveTier? cognitiveTier,
     int? estimatedMinutes,
     int? estimatedPomodoros,
     int? loggedPomodoros,
@@ -76,7 +94,6 @@ class Task {
       projectId: projectId ?? this.projectId,
       projectTag: projectTag ?? this.projectTag,
       priority: priority ?? this.priority,
-      cognitiveTier: cognitiveTier ?? this.cognitiveTier,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
       estimatedPomodoros: estimatedPomodoros ?? this.estimatedPomodoros,
       loggedPomodoros: loggedPomodoros ?? this.loggedPomodoros,

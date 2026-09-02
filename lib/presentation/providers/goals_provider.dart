@@ -100,33 +100,30 @@ class GoalsNotifier extends StateNotifier<GoalsState> {
     ];
 
     final tasks = [
-      Task(
+      const Task(
         id: 't-1',
         title: 'Solve Binary Tree Maximum Path Sum (LeetCode 124)',
         milestoneId: 'm-3',
         milestoneTitle: 'Step 13: Binary Trees',
-        priority: TaskPriority.p0,
-        cognitiveTier: CognitiveTier.deep3x,
+        priority: TaskPriority.high,
         estimatedMinutes: 45,
         isCompleted: false,
       ),
-      Task(
+      const Task(
         id: 't-2',
         title: 'Review Lowest Common Ancestor (LCA) Approach in BST',
         milestoneId: 'm-3',
         milestoneTitle: 'Step 14: Binary Search Trees',
-        priority: TaskPriority.p1,
-        cognitiveTier: CognitiveTier.medium2x,
+        priority: TaskPriority.medium,
         estimatedMinutes: 30,
         isCompleted: false,
       ),
-      Task(
+      const Task(
         id: 't-3',
         title: 'Complete 3 Practice Problems on Monotonic Stack',
         milestoneId: 'm-2',
         milestoneTitle: 'Step 9: Stack and Queues',
-        priority: TaskPriority.p1,
-        cognitiveTier: CognitiveTier.deep3x,
+        priority: TaskPriority.medium,
         estimatedMinutes: 60,
         isCompleted: true,
       ),

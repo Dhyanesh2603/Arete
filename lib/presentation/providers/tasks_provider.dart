@@ -4,14 +4,12 @@ import '../../domain/models/task.dart';
 class TasksState {
   final List<Task> tasks;
   final TaskPriority? filterPriority;
-  final CognitiveTier? filterCognitiveTier;
   final bool? filterCompleted;
   final String searchQuery;
 
   const TasksState({
     required this.tasks,
     this.filterPriority,
-    this.filterCognitiveTier,
     this.filterCompleted,
     this.searchQuery = '',
   });
@@ -20,8 +18,6 @@ class TasksState {
     List<Task>? tasks,
     TaskPriority? filterPriority,
     bool clearPriority = false,
-    CognitiveTier? filterCognitiveTier,
-    bool clearCognitive = false,
     bool? filterCompleted,
     bool clearCompleted = false,
     String? searchQuery,
@@ -30,9 +26,6 @@ class TasksState {
       tasks: tasks ?? this.tasks,
       filterPriority:
           clearPriority ? null : (filterPriority ?? this.filterPriority),
-      filterCognitiveTier: clearCognitive
-          ? null
-          : (filterCognitiveTier ?? this.filterCognitiveTier),
       filterCompleted:
           clearCompleted ? null : (filterCompleted ?? this.filterCompleted),
       searchQuery: searchQuery ?? this.searchQuery,
@@ -42,17 +35,14 @@ class TasksState {
   List<Task> get filteredTasks {
     return tasks.where((t) {
       if (filterPriority != null && t.priority != filterPriority) return false;
-      if (filterCognitiveTier != null &&
-          t.cognitiveTier != filterCognitiveTier) {
-        return false;
-      }
       if (filterCompleted != null && t.isCompleted != filterCompleted) {
         return false;
       }
       if (searchQuery.isNotEmpty) {
         final q = searchQuery.toLowerCase();
         if (!t.title.toLowerCase().contains(q) &&
-            !(t.milestoneTitle?.toLowerCase().contains(q) ?? false)) {
+            !(t.milestoneTitle?.toLowerCase().contains(q) ?? false) &&
+            !(t.projectTag?.toLowerCase().contains(q) ?? false)) {
           return false;
         }
       }
@@ -73,8 +63,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
         id: 'tk-1',
         title: 'Solve Binary Tree Maximum Path Sum (LeetCode 124)',
         milestoneTitle: 'Step 13: Binary Trees',
-        priority: TaskPriority.p0,
-        cognitiveTier: CognitiveTier.deep3x,
+        projectTag: 'dsa',
+        priority: TaskPriority.high,
         estimatedMinutes: 45,
         isCompleted: false,
       ),
@@ -82,8 +72,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
         id: 'tk-2',
         title: 'Benchmark Triton SRAM Shared Memory Bank Conflict Latency',
         milestoneTitle: 'FlashAttention Kernel',
-        priority: TaskPriority.p0,
-        cognitiveTier: CognitiveTier.deep3x,
+        projectTag: 'system',
+        priority: TaskPriority.high,
         estimatedMinutes: 60,
         isCompleted: false,
       ),
@@ -91,8 +81,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
         id: 'tk-3',
         title: 'Complete 3 Practice Problems on Monotonic Stack',
         milestoneTitle: 'Step 9: Stack & Queues',
-        priority: TaskPriority.p1,
-        cognitiveTier: CognitiveTier.deep3x,
+        projectTag: 'dsa',
+        priority: TaskPriority.medium,
         estimatedMinutes: 60,
         isCompleted: true,
       ),
@@ -100,8 +90,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
         id: 'tk-4',
         title: 'Review Lowest Common Ancestor (LCA) in BST',
         milestoneTitle: 'Step 14: BST',
-        priority: TaskPriority.p1,
-        cognitiveTier: CognitiveTier.medium2x,
+        projectTag: 'dsa',
+        priority: TaskPriority.medium,
         estimatedMinutes: 30,
         isCompleted: false,
       ),
@@ -109,8 +99,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
         id: 'tk-5',
         title: 'Read Google Borg Distributed Orchestration Research Paper',
         milestoneTitle: 'Distributed Systems',
-        priority: TaskPriority.p2,
-        cognitiveTier: CognitiveTier.medium2x,
+        projectTag: 'reading',
+        priority: TaskPriority.low,
         estimatedMinutes: 45,
         isCompleted: false,
       ),
@@ -118,8 +108,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
         id: 'tk-6',
         title: 'Log Weekly Retrospective in Arete Knowledge Base',
         milestoneTitle: 'Life OS Mastery',
-        priority: TaskPriority.p2,
-        cognitiveTier: CognitiveTier.shallow1x,
+        projectTag: 'chores',
+        priority: TaskPriority.low,
         estimatedMinutes: 15,
         isCompleted: true,
       ),
@@ -146,14 +136,6 @@ class TasksNotifier extends StateNotifier<TasksState> {
       state = state.copyWith(clearPriority: true);
     } else {
       state = state.copyWith(filterPriority: p);
-    }
-  }
-
-  void setCognitiveFilter(CognitiveTier? c) {
-    if (c == null) {
-      state = state.copyWith(clearCognitive: true);
-    } else {
-      state = state.copyWith(filterCognitiveTier: c);
     }
   }
 

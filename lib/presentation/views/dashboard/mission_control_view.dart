@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../domain/models/task.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/dsa_provider.dart';
 import '../../providers/focus_session_provider.dart';
 import '../../providers/goals_provider.dart';
@@ -20,10 +22,10 @@ class MissionControlView extends ConsumerWidget {
     final goalsState = ref.watch(goalsProvider);
     final habits = ref.watch(habitsProvider);
     final cohortState = ref.watch(peerCohortProvider);
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
 
     final completedHabitsToday = habits.where((h) => h.isCompletedToday).length;
-    final habitRatio =
-        habits.isEmpty ? 0.0 : completedHabitsToday / habits.length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -34,11 +36,11 @@ class MissionControlView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Identity Header & Status Strip with Concentric Rings
-              _buildIdentityHeader(context, ref, habitRatio, isWide),
+              // Personalized Header Banner
+              _buildPersonalizedHeader(context, user, isWide),
               const SizedBox(height: 20),
 
-              // Metric Telemetry Cards Grid
+              // 4 Glanceable Metric Cards
               _buildTelemetryGrid(
                   dsaState, habits, completedHabitsToday, cohortState, isWide),
               const SizedBox(height: 20),
@@ -56,7 +58,7 @@ class MissionControlView extends ConsumerWidget {
                         children: [
                           _buildHeroNextActionCard(context, ref, goalsState),
                           const SizedBox(height: 20),
-                          _buildTimelineFlowCard(context, isWide),
+                          _buildTimelineFlowCard(context),
                         ],
                       ),
                     ),
@@ -83,7 +85,7 @@ class MissionControlView extends ConsumerWidget {
                     const SizedBox(height: 20),
                     _buildCohortLiveStatusCard(context, cohortState),
                     const SizedBox(height: 20),
-                    _buildTimelineFlowCard(context, isWide),
+                    _buildTimelineFlowCard(context),
                     const SizedBox(height: 20),
                     _buildStriverTopicsRadarCard(context, dsaState),
                   ],
@@ -95,8 +97,11 @@ class MissionControlView extends ConsumerWidget {
     );
   }
 
-  Widget _buildIdentityHeader(
-      BuildContext context, WidgetRef ref, double habitRatio, bool isWide) {
+  Widget _buildPersonalizedHeader(
+      BuildContext context, dynamic user, bool isWide) {
+    final userName = user?.name ?? 'Dhyanesh';
+    final userRole = user?.targetRole ?? 'Senior AI Systems Architect & DSA Master';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
@@ -111,31 +116,40 @@ class MissionControlView extends ConsumerWidget {
             focusProgress: 0.70, // 3.5h / 5.0h
             habitProgress: 1.00,
             velocityProgress: 0.85,
-            size: 42,
+            size: 40,
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.lavenderBg,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                        color: AppColors.lavender.withValues(alpha: 0.3)),
-                  ),
-                  child: Text('IDENTITY TARGET',
-                      style: AppTypography.monoBadge
-                          .copyWith(color: AppColors.lavender, fontSize: 9)),
+                Row(
+                  children: [
+                    Text(
+                      'Welcome back, $userName',
+                      style: AppTypography.heading2.copyWith(
+                        color: AppColors.textHigh,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.cyanBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'ACTIVE',
+                        style: AppTypography.monoBadge.copyWith(color: AppColors.cyan, fontSize: 9),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
-                  'Senior Distributed AI Systems Architect & DSA Master',
-                  style: AppTypography.heading2
-                      .copyWith(color: AppColors.textHigh, fontSize: 15),
+                  'Goal: $userRole',
+                  style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -145,24 +159,17 @@ class MissionControlView extends ConsumerWidget {
           if (isWide) ...[
             const SizedBox(width: 12),
             _buildPill(
-              label: 'ENERGY',
-              value: '4/5',
-              color: AppColors.cyan,
-              bgColor: AppColors.cyanBg,
-            ),
-            const SizedBox(width: 8),
-            _buildPill(
-              label: 'VELOCITY',
-              value: '+14%',
-              color: AppColors.mint,
-              bgColor: AppColors.mintBg,
-            ),
-            const SizedBox(width: 8),
-            _buildPill(
               label: 'STREAK',
-              value: '42 Days',
+              value: '${user?.streakDays ?? 42} Days',
               color: AppColors.amber,
               bgColor: AppColors.amberBg,
+            ),
+            const SizedBox(width: 8),
+            _buildPill(
+              label: 'SOLVED',
+              value: '${user?.totalProblemsSolved ?? 48} Problems',
+              color: AppColors.mint,
+              bgColor: AppColors.mintBg,
             ),
           ],
         ],
@@ -172,94 +179,42 @@ class MissionControlView extends ConsumerWidget {
 
   Widget _buildTelemetryGrid(dynamic dsaState, dynamic habits,
       int completedHabitsToday, dynamic cohortState, bool isWide) {
-    if (isWide) {
-      return Row(
-        children: [
-          TelemetryMetricCard(
-            label: 'Striver A2Z DSA Sheet',
-            value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
-            subValue: '+4 Today',
-            accentColor: AppColors.cyan,
-            bgColor: AppColors.cyanBg,
-            icon: Icons.code_rounded,
-          ),
-          const SizedBox(width: 12),
-          TelemetryMetricCard(
-            label: 'Deep Work Focus Today',
-            value: '3.5h',
-            subValue: '/ 5.0h Target',
-            accentColor: AppColors.amber,
-            bgColor: AppColors.amberBg,
-            icon: Icons.timer_outlined,
-          ),
-          const SizedBox(width: 12),
-          TelemetryMetricCard(
-            label: 'Habit Consistency Score',
-            value: '98.4%',
-            subValue: '$completedHabitsToday/${habits.length} Done',
-            accentColor: AppColors.mint,
-            bgColor: AppColors.mintBg,
-            icon: Icons.repeat_rounded,
-          ),
-          const SizedBox(width: 12),
-          TelemetryMetricCard(
-            label: 'DSA Cohort War-Room',
-            value: '${cohortState.cohort.totalGroupProblemsToday} Solved',
-            subValue:
-                '${cohortState.cohort.activeFocusingMembersCount} Focusing',
-            accentColor: AppColors.lavender,
-            bgColor: AppColors.lavenderBg,
-            icon: Icons.groups_rounded,
-          ),
-        ],
-      );
-    }
-
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            TelemetryMetricCard(
-              label: 'Striver A2Z DSA Sheet',
-              value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
-              subValue: '+4 Today',
-              accentColor: AppColors.cyan,
-              bgColor: AppColors.cyanBg,
-              icon: Icons.code_rounded,
-            ),
-            const SizedBox(width: 12),
-            TelemetryMetricCard(
-              label: 'Deep Work Focus Today',
-              value: '3.5h',
-              subValue: '/ 5.0h Target',
-              accentColor: AppColors.amber,
-              bgColor: AppColors.amberBg,
-              icon: Icons.timer_outlined,
-            ),
-          ],
+        TelemetryMetricCard(
+          label: 'Striver A2Z DSA Sheet',
+          value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
+          subValue: '+4 Today',
+          accentColor: AppColors.cyan,
+          bgColor: AppColors.cyanBg,
+          icon: Icons.code_rounded,
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            TelemetryMetricCard(
-              label: 'Habit Consistency Score',
-              value: '98.4%',
-              subValue: '$completedHabitsToday/${habits.length} Done',
-              accentColor: AppColors.mint,
-              bgColor: AppColors.mintBg,
-              icon: Icons.repeat_rounded,
-            ),
-            const SizedBox(width: 12),
-            TelemetryMetricCard(
-              label: 'DSA Cohort War-Room',
-              value: '${cohortState.cohort.totalGroupProblemsToday} Solved',
-              subValue:
-                  '${cohortState.cohort.activeFocusingMembersCount} Focusing',
-              accentColor: AppColors.lavender,
-              bgColor: AppColors.lavenderBg,
-              icon: Icons.groups_rounded,
-            ),
-          ],
+        const SizedBox(width: 12),
+        TelemetryMetricCard(
+          label: 'Deep Work Focus Today',
+          value: '3.5h',
+          subValue: '/ 5.0h Target',
+          accentColor: AppColors.amber,
+          bgColor: AppColors.amberBg,
+          icon: Icons.timer_outlined,
+        ),
+        const SizedBox(width: 12),
+        TelemetryMetricCard(
+          label: 'Habit Consistency',
+          value: '98.4%',
+          subValue: '$completedHabitsToday/${habits.length} Done',
+          accentColor: AppColors.mint,
+          bgColor: AppColors.mintBg,
+          icon: Icons.repeat_rounded,
+        ),
+        const SizedBox(width: 12),
+        TelemetryMetricCard(
+          label: 'Study Squad War-Room',
+          value: '${cohortState.cohort.totalGroupProblemsToday} Solved',
+          subValue: '${cohortState.cohort.activeFocusingMembersCount} Live',
+          accentColor: AppColors.lavender,
+          bgColor: AppColors.lavenderBg,
+          icon: Icons.groups_rounded,
         ),
       ],
     );
@@ -316,7 +271,7 @@ class MissionControlView extends ConsumerWidget {
                   color: AppColors.cyanBg,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text('WHAT TO EXECUTE NEXT',
+                child: Text('PRIMARY NEXT ACTION',
                     style: AppTypography.monoBadge
                         .copyWith(color: AppColors.cyan, fontSize: 10)),
               ),
@@ -329,28 +284,20 @@ class MissionControlView extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              // Simplified Priority Badge: High (Red)
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.roseBg,
+                  color: TaskPriority.high.backgroundColor,
                   borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: TaskPriority.high.color.withValues(alpha: 0.4)),
                 ),
-                child: Text('P0 URGENT',
-                    style: AppTypography.monoBadge
-                        .copyWith(color: AppColors.rose, fontSize: 10)),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceTier2,
-                  borderRadius: BorderRadius.circular(4),
+                child: Text(
+                  'HIGH PRIORITY',
+                  style: AppTypography.monoBadge
+                      .copyWith(color: TaskPriority.high.color, fontSize: 9),
                 ),
-                child: Text('DEEP 3X',
-                    style: AppTypography.monoBadge
-                        .copyWith(color: AppColors.textMedium, fontSize: 10)),
               ),
             ],
           ),
@@ -365,14 +312,12 @@ class MissionControlView extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Sub-goal: Master bottom-up recursion contribution tracking before moving to Graph Algorithms.',
+            'Sub-goal: Master bottom-up recursion subtree contribution logic before moving to Graph Algorithms.',
             style:
                 AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
           ),
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 10,
+          Row(
             children: [
               ElevatedButton.icon(
                 onPressed: () {
@@ -388,7 +333,7 @@ class MissionControlView extends ConsumerWidget {
                 icon: const Icon(Icons.play_arrow_rounded,
                     size: 18, color: Color(0xFF0B0D13)),
                 label: Text(
-                  'ENGAGE FOCUS SESSION (Cmd + Enter)',
+                  'START FOCUS (Cmd + Enter)',
                   style: AppTypography.monoBadge.copyWith(
                     color: const Color(0xFF0B0D13),
                     fontWeight: FontWeight.w700,
@@ -404,6 +349,7 @@ class MissionControlView extends ConsumerWidget {
                   elevation: 0,
                 ),
               ),
+              const SizedBox(width: 12),
               OutlinedButton.icon(
                 onPressed: () {
                   context.go('/dsa');
@@ -411,7 +357,7 @@ class MissionControlView extends ConsumerWidget {
                 icon: const Icon(Icons.list_alt_rounded,
                     size: 16, color: AppColors.textMedium),
                 label: Text(
-                  'Open Sheet',
+                  'Open DSA Sheet',
                   style: AppTypography.bodyMedium
                       .copyWith(color: AppColors.textMedium),
                 ),
@@ -431,7 +377,7 @@ class MissionControlView extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimelineFlowCard(BuildContext context, bool isWide) {
+  Widget _buildTimelineFlowCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -444,7 +390,7 @@ class MissionControlView extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('TODAY FLOW TIMELINE', style: AppTypography.heading2),
+              Text('TODAY SCHEDULE', style: AppTypography.heading2),
               const Spacer(),
               Text('08:00 - 20:00',
                   style: AppTypography.caption
@@ -452,7 +398,6 @@ class MissionControlView extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Time-Block Stream
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -460,7 +405,7 @@ class MissionControlView extends ConsumerWidget {
                 SizedBox(
                   width: 180,
                   child: _buildTimeBlock(
-                    title: '08:00 DSA Deep Code',
+                    title: '08:00 DSA Practice',
                     subtitle: 'Binary Trees LCA (Done)',
                     isDone: true,
                     color: AppColors.mint,
@@ -482,7 +427,7 @@ class MissionControlView extends ConsumerWidget {
                 SizedBox(
                   width: 180,
                   child: _buildTimeBlock(
-                    title: '14:30 Cohort Sync',
+                    title: '14:30 Squad Sync',
                     subtitle: 'Striver Step 13 Review',
                     color: AppColors.lavender,
                     bgColor: AppColors.lavenderBg,
@@ -493,7 +438,7 @@ class MissionControlView extends ConsumerWidget {
                   width: 180,
                   child: _buildTimeBlock(
                     title: '18:00 Cardio & Recovery',
-                    subtitle: '45m Physical (Pending)',
+                    subtitle: '45m Running (Pending)',
                     color: AppColors.amber,
                     bgColor: AppColors.amberBg,
                   ),
@@ -568,7 +513,7 @@ class MissionControlView extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('DSA SQUAD ALPHA', style: AppTypography.heading2),
+              Text('STUDY SQUAD ALPHA', style: AppTypography.heading2),
               const Spacer(),
               InkWell(
                 onTap: () => context.go('/cohort'),
@@ -581,8 +526,7 @@ class MissionControlView extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Member List
-          ...cohortState.cohort.members.map((m) {
+          ...cohortState.cohort.members.take(3).map((m) {
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -666,7 +610,7 @@ class MissionControlView extends ConsumerWidget {
 
   Widget _buildStriverTopicsRadarCard(
       BuildContext context, DsaState dsaState) {
-    final summaries = dsaState.stepSummaries.take(5).toList();
+    final summaries = dsaState.stepSummaries.take(4).toList();
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -681,7 +625,7 @@ class MissionControlView extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text('TOPIC MASTERY GATES',
+                child: Text('STRIVER TOPIC GATES',
                     style: AppTypography.heading2,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),

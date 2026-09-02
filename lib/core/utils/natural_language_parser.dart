@@ -3,7 +3,6 @@ import '../../domain/models/task.dart';
 class ParsedTaskResult {
   final String title;
   final TaskPriority priority;
-  final CognitiveTier cognitiveTier;
   final int estimatedMinutes;
   final int estimatedPomodoros;
   final DateTime? dueDate;
@@ -11,8 +10,7 @@ class ParsedTaskResult {
 
   const ParsedTaskResult({
     required this.title,
-    this.priority = TaskPriority.p1,
-    this.cognitiveTier = CognitiveTier.medium2x,
+    this.priority = TaskPriority.medium,
     this.estimatedMinutes = 45,
     this.estimatedPomodoros = 1,
     this.dueDate,
@@ -27,37 +25,26 @@ class NaturalLanguageTaskParser {
     }
 
     String working = input.trim();
-    TaskPriority priority = TaskPriority.p1;
-    CognitiveTier cognitiveTier = CognitiveTier.medium2x;
+    TaskPriority priority = TaskPriority.medium;
     int estimatedMinutes = 45;
     DateTime? dueDate;
     String? projectTag;
 
-    // 1. Priority parsing: !p0, !p1, !p2, !urgent
-    if (RegExp(r'!p0|!urgent', caseSensitive: false).hasMatch(working)) {
-      priority = TaskPriority.p0;
-      working = working.replaceAll(RegExp(r'!p0|!urgent', caseSensitive: false), '');
-    } else if (RegExp(r'!p1|!high', caseSensitive: false).hasMatch(working)) {
-      priority = TaskPriority.p1;
-      working = working.replaceAll(RegExp(r'!p1|!high', caseSensitive: false), '');
-    } else if (RegExp(r'!p2|!low', caseSensitive: false).hasMatch(working)) {
-      priority = TaskPriority.p2;
-      working = working.replaceAll(RegExp(r'!p2|!low', caseSensitive: false), '');
+    // 1. Priority parsing: !high, !p0, !urgent -> High (Red)
+    //                      !med, !medium, !p1 -> Medium (Yellow)
+    //                      !low, !p2 -> Low (Green)
+    if (RegExp(r'!high|!p0|!urgent', caseSensitive: false).hasMatch(working)) {
+      priority = TaskPriority.high;
+      working = working.replaceAll(RegExp(r'!high|!p0|!urgent', caseSensitive: false), '');
+    } else if (RegExp(r'!low|!p2', caseSensitive: false).hasMatch(working)) {
+      priority = TaskPriority.low;
+      working = working.replaceAll(RegExp(r'!low|!p2', caseSensitive: false), '');
+    } else if (RegExp(r'!med|!medium|!p1', caseSensitive: false).hasMatch(working)) {
+      priority = TaskPriority.medium;
+      working = working.replaceAll(RegExp(r'!med|!medium|!p1', caseSensitive: false), '');
     }
 
-    // 2. Cognitive Tier parsing: @deep, @deep3x, @medium, @shallow
-    if (RegExp(r'@deep3x|@deep', caseSensitive: false).hasMatch(working)) {
-      cognitiveTier = CognitiveTier.deep3x;
-      working = working.replaceAll(RegExp(r'@deep3x|@deep', caseSensitive: false), '');
-    } else if (RegExp(r'@medium2x|@medium', caseSensitive: false).hasMatch(working)) {
-      cognitiveTier = CognitiveTier.medium2x;
-      working = working.replaceAll(RegExp(r'@medium2x|@medium', caseSensitive: false), '');
-    } else if (RegExp(r'@shallow1x|@shallow', caseSensitive: false).hasMatch(working)) {
-      cognitiveTier = CognitiveTier.shallow1x;
-      working = working.replaceAll(RegExp(r'@shallow1x|@shallow', caseSensitive: false), '');
-    }
-
-    // 3. Duration parsing: ~45m, ~60m, ~1h, ~2h, ~90min
+    // 2. Duration parsing: ~45m, ~60m, ~1h, ~2h, ~90min
     final durationMatch = RegExp(r'~(\d+)(m|min|h|hr)?', caseSensitive: false).firstMatch(working);
     if (durationMatch != null) {
       final value = int.tryParse(durationMatch.group(1) ?? '45') ?? 45;
@@ -70,14 +57,14 @@ class NaturalLanguageTaskParser {
       working = working.replaceFirst(durationMatch.group(0)!, '');
     }
 
-    // 4. Project Tag parsing: #dsa, #career, #project, #health
+    // 3. Project Tag parsing: #dsa, #career, #project, #health
     final tagMatch = RegExp(r'#(\w+)').firstMatch(working);
     if (tagMatch != null) {
       projectTag = tagMatch.group(1);
       working = working.replaceFirst(tagMatch.group(0)!, '');
     }
 
-    // 5. Date parsing: today, tomorrow, monday, friday
+    // 4. Date parsing: today, tomorrow, next week
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -103,7 +90,6 @@ class NaturalLanguageTaskParser {
     return ParsedTaskResult(
       title: cleanedTitle,
       priority: priority,
-      cognitiveTier: cognitiveTier,
       estimatedMinutes: estimatedMinutes,
       estimatedPomodoros: estimatedPomodoros,
       dueDate: dueDate,

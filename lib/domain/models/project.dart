@@ -6,8 +6,7 @@ class ProjectTask {
   final String title;
   final String description;
   final ProjectColumn column;
-  final String priority; // P0, P1, P2
-  final String cognitiveTier; // Deep 3x, Medium 2x, Shallow 1x
+  final String priority; // High, Medium, Low
   final int estimatedMinutes;
   final int loggedMinutes;
   final DateTime? dueDate;
@@ -18,8 +17,7 @@ class ProjectTask {
     required this.title,
     this.description = '',
     this.column = ProjectColumn.backlog,
-    this.priority = 'P1',
-    this.cognitiveTier = 'Medium 2x',
+    this.priority = 'Medium',
     this.estimatedMinutes = 45,
     this.loggedMinutes = 0,
     this.dueDate,
@@ -32,7 +30,6 @@ class ProjectTask {
     String? description,
     ProjectColumn? column,
     String? priority,
-    String? cognitiveTier,
     int? estimatedMinutes,
     int? loggedMinutes,
     DateTime? dueDate,
@@ -44,7 +41,6 @@ class ProjectTask {
       description: description ?? this.description,
       column: column ?? this.column,
       priority: priority ?? this.priority,
-      cognitiveTier: cognitiveTier ?? this.cognitiveTier,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
       loggedMinutes: loggedMinutes ?? this.loggedMinutes,
       dueDate: dueDate ?? this.dueDate,
