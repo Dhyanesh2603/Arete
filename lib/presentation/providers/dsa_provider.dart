@@ -91,24 +91,29 @@ class DsaState {
       grouped.putIfAbsent(p.stepNumber, () => []).add(p);
     }
 
-    final sortedKeys = grouped.keys.toList()..sort();
+    final titles = StriverA2ZData.getStepTitles();
 
-    return sortedKeys.map((stepNum) {
-      final stepProblems = grouped[stepNum]!;
-      final stepTitle =
-          stepProblems.isNotEmpty ? stepProblems.first.stepTitle : 'Step $stepNum';
+    final List<DsaStepSummary> list = [];
+    for (int stepNum = 1; stepNum <= 18; stepNum++) {
+      final stepProblems = grouped[stepNum] ?? [];
+      final defaultTitle =
+          stepNum < titles.length ? titles[stepNum] : 'Step $stepNum';
+      final stepTitle = stepProblems.isNotEmpty
+          ? stepProblems.first.stepTitle
+          : defaultTitle;
       final solved =
           stepProblems.where((p) => p.status == DsaStatus.solved).length;
       final total = stepProblems.length;
 
-      return DsaStepSummary(
+      list.add(DsaStepSummary(
         stepNumber: stepNum,
         title: stepTitle,
         totalProblems: total,
         solvedProblems: solved,
         progressPercentage: total == 0 ? 0.0 : (solved / total) * 100.0,
-      );
-    }).toList();
+      ));
+    }
+    return list;
   }
 }
 

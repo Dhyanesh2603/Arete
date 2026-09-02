@@ -117,9 +117,13 @@ class _DsaRoadmapViewState extends ConsumerState<DsaRoadmapView> {
                                 child: Text('All 18 Steps (Full Sheet)'),
                               ),
                               ...dsaState.stepSummaries.map((s) {
+                                final cleanTitle = s.title.startsWith('Step ')
+                                    ? s.title
+                                    : 'Step ${s.stepNumber}: ${s.title}';
                                 return DropdownMenuItem<int?>(
                                   value: s.stepNumber,
-                                  child: Text('Step ${s.stepNumber}: ${s.title} (${s.solvedProblems}/${s.totalProblems})'),
+                                  child: Text(
+                                      '$cleanTitle (${s.solvedProblems}/${s.totalProblems})'),
                                 );
                               }),
                             ],
