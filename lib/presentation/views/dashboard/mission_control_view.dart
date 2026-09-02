@@ -554,6 +554,16 @@ class MissionControlView extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 14, color: AppColors.textSubtle),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                      onPressed: () {
+                        ref.read(tasksProvider.notifier).deleteTask(task.id);
+                      },
+                      tooltip: 'Delete task',
+                    ),
                   ],
                 ),
               );

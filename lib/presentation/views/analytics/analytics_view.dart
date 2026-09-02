@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/dsa_provider.dart';
 import '../../providers/habits_provider.dart';
 import '../../providers/tasks_provider.dart';
-import '../../widgets/habit_heatmap_painter.dart';
 
 class AnalyticsView extends ConsumerWidget {
   const AnalyticsView({super.key});
@@ -24,26 +23,6 @@ class AnalyticsView extends ConsumerWidget {
     final completedTasks = tasksState.completedCount;
     final totalTasks = tasksState.tasks.length;
     final streakDays = user?.streakDays ?? 0;
-
-    // Compute real intensities from user's habits (or 0.0 if empty)
-    final intensities = List.generate(365, (i) {
-      if (habits.isEmpty) return 0.0;
-      // Index relative to last 30 days
-      final dayOffset = 365 - 1 - i;
-      if (dayOffset < 30) {
-        int completedOnDay = 0;
-        for (final h in habits) {
-          final historyIdx = h.last30DaysHistory.length - 1 - dayOffset;
-          if (historyIdx >= 0 &&
-              historyIdx < h.last30DaysHistory.length &&
-              h.last30DaysHistory[historyIdx]) {
-            completedOnDay++;
-          }
-        }
-        return habits.isEmpty ? 0.0 : (completedOnDay / habits.length).clamp(0.0, 1.0);
-      }
-      return 0.0;
-    });
 
     final hasData = solvedCount > 0 || completedTasks > 0;
 
@@ -163,25 +142,6 @@ class AnalyticsView extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // 365-Day Consistency Heatmap
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceTier1,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.borderSubtle),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('365-DAY CONSISTENCY MATRIX',
-                      style: AppTypography.heading2.copyWith(fontSize: 15)),
-                  const SizedBox(height: 16),
-                  HabitHeatmapWidget(dailyIntensities: intensities),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
 
             // Friction Radar
             Container(

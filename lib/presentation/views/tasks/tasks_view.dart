@@ -328,6 +328,23 @@ class _TasksViewState extends ConsumerState<TasksView> {
               },
             ),
           ),
+          // Delete Task Button
+          Tooltip(
+            message: 'Delete task',
+            child: IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.textSubtle),
+              onPressed: () {
+                notifier.deleteTask(task.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Task deleted.'),
+                    duration: Duration(seconds: 2),
+                    backgroundColor: AppColors.surfaceTier2,
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
