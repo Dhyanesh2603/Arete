@@ -12,14 +12,14 @@ class SupabaseService {
   static SupabaseClient? _client;
   static bool _isSupabaseConfigured = false;
 
-  // Public project configuration placeholders (can be replaced with live Supabase credentials)
+  // Public project configuration
   static String supabaseUrl = const String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://xyzcompany.supabase.co',
+    defaultValue: 'https://hojmtegkcucjmdbhiflp.supabase.co',
   );
   static String supabaseAnonKey = const String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvam10ZWdrY3Vjam1kYmhpZmxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNDg0OTAsImV4cCI6MjEwMzkyNDQ5MH0.phNJR_B8PdPUjH0pvoBWQhgc1i_y52i_KdYtsQL6zbs',
   );
 
   static Future<void> initialize({String? url, String? anonKey}) async {
