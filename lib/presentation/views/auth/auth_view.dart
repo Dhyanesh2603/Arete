@@ -230,7 +230,73 @@ class _AuthViewState extends ConsumerState<AuthView> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+
+                // Divider OR
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: AppColors.borderSubtle)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('OR', style: AppTypography.caption.copyWith(color: AppColors.textSubtle, fontSize: 10)),
+                    ),
+                    const Expanded(child: Divider(color: AppColors.borderSubtle)),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Google Login Button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: authState.isLoading
+                        ? null
+                        : () async {
+                            final success = await ref.read(authProvider.notifier).signInWithGoogle();
+                            if (success && context.mounted) {
+                              context.go('/dashboard');
+                            }
+                          },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.borderActive),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      backgroundColor: AppColors.surfaceTier2,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.cyan.withValues(alpha: 0.6), width: 1.5),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'G',
+                              style: TextStyle(
+                                color: AppColors.cyan,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'CONTINUE WITH GOOGLE',
+                          style: AppTypography.monoBadge.copyWith(
+                            color: AppColors.textHigh,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Instant Guest Button
                 SizedBox(
@@ -241,13 +307,13 @@ class _AuthViewState extends ConsumerState<AuthView> {
                       context.go('/dashboard');
                     },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.borderActive),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: AppColors.borderSubtle),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     child: Text(
                       'EXPLORE AS GUEST (1-CLICK)',
-                      style: AppTypography.monoBadge.copyWith(color: AppColors.textHigh),
+                      style: AppTypography.monoBadge.copyWith(color: AppColors.textMedium),
                     ),
                   ),
                 ),

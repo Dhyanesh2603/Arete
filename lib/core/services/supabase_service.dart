@@ -7,6 +7,7 @@ import '../../domain/models/habit.dart';
 import '../../domain/models/knowledge_note.dart';
 import '../../domain/models/task.dart';
 import '../../domain/models/user_profile.dart';
+import '../utils/auth_redirect.dart';
 
 class SupabaseService {
   static SupabaseClient? _client;
@@ -156,6 +157,71 @@ class SupabaseService {
     }
     await _setCurrentSessionUserId(userId);
     return profile;
+  }
+
+  static Future<void> signInWithGoogle() async {
+    if (_isSupabaseConfigured && _client != null) {
+      try {
+        final currentUri = getBrowserUri();
+        final redirectUrl = '${currentUri.scheme}://${currentUri.host}${currentUri.hasPort ? ':${currentUri.port}' : ''}/';
+        final oAuthResponse = await _client!.auth.getOAuthSignInUrl(
+          provider: OAuthProvider.google,
+          redirectTo: redirectUrl,
+        );
+        openUrlInBrowser(oAuthResponse.url);
+      } on AuthException catch (e) {
+        throw e.message;
+      } catch (e) {
+        throw 'Google login failed: $e';
+      }
+    } else {
+      final profile = UserProfile(
+        id: 'usr-google-${DateTime.now().millisecondsSinceEpoch}',
+        name: 'Google User',
+        email: 'user@gmail.com',
+        targetRole: 'Software Engineer & DSA Aspirant',
+        avatarColor: const Color(0xFF38BDF8),
+        streakDays: 0,
+        totalProblemsSolved: 0,
+        totalFocusHours: 0.0,
+        createdAt: DateTime.now(),
+      );
+      await saveUserProfile(profile);
+      await _setCurrentSessionUserId(profile.id);
+    }
+  }
+
+  static Future<UserProfile?> checkOAuthRedirectSession() async {
+    final uri = getBrowserUri();
+    if (uri.fragment.contains('access_token') || uri.queryParameters.containsKey('access_token')) {
+      if (_isSupabaseConfigured && _client != null) {
+        try {
+          final res = await _client!.auth.getSessionFromUrl(uri);
+          final user = res.session.user;
+          var profile = await fetchUserProfile(user.id);
+          if (profile == null) {
+            final metaName = user.userMetadata?['full_name'] ??
+                user.userMetadata?['name'] ??
+                (user.email != null ? user.email!.split('@').first : 'Google User');
+            profile = UserProfile(
+              id: user.id,
+              name: metaName.toString(),
+              email: user.email ?? 'google@arete.app',
+              targetRole: 'Software Engineer & DSA Aspirant',
+              avatarColor: const Color(0xFF38BDF8),
+              streakDays: 0,
+              totalProblemsSolved: 0,
+              totalFocusHours: 0.0,
+              createdAt: DateTime.now(),
+            );
+            await saveUserProfile(profile);
+          }
+          await _setCurrentSessionUserId(profile.id);
+          return profile;
+        } catch (_) {}
+      }
+    }
+    return null;
   }
 
   static Future<void> signOut() async {

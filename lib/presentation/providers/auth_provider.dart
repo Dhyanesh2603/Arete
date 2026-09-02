@@ -34,7 +34,9 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState(isAuthenticated: false));
+  AuthNotifier() : super(const AuthState(isAuthenticated: false)) {
+    checkOAuthRedirect();
+  }
 
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -116,6 +118,33 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return false;
     }
+  }
+
+  Future<bool> signInWithGoogle() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await SupabaseService.signInWithGoogle();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<void> checkOAuthRedirect() async {
+    try {
+      final profile = await SupabaseService.checkOAuthRedirectSession();
+      if (profile != null) {
+        state = AuthState(
+          user: profile,
+          isAuthenticated: true,
+          isLoading: false,
+        );
+      }
+    } catch (_) {}
   }
 
   void guestLogin() {
