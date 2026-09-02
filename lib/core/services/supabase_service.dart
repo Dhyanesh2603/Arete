@@ -234,6 +234,30 @@ class SupabaseService {
     return null;
   }
 
+  static Future<UserProfile> authenticateGoogleAccount({
+    required String name,
+    required String email,
+  }) async {
+    final userId = 'usr-google-${email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+    var profile = await fetchUserProfile(userId);
+    if (profile == null) {
+      profile = UserProfile(
+        id: userId,
+        name: name.trim(),
+        email: email.trim(),
+        targetRole: 'Software Engineer & DSA Aspirant',
+        avatarColor: const Color(0xFF38BDF8),
+        streakDays: 0,
+        totalProblemsSolved: 0,
+        totalFocusHours: 0.0,
+        createdAt: DateTime.now(),
+      );
+      await saveUserProfile(profile);
+    }
+    await _setCurrentSessionUserId(userId);
+    return profile;
+  }
+
   static Future<void> signOut() async {
     if (_isSupabaseConfigured && _client != null) {
       try {

@@ -146,6 +146,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {}
   }
 
+  Future<void> loginWithGoogleAccount({
+    required String name,
+    required String email,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    final profile = await SupabaseService.authenticateGoogleAccount(
+      name: name,
+      email: email,
+    );
+    state = AuthState(
+      user: profile,
+      isAuthenticated: true,
+      isLoading: false,
+    );
+  }
+
   Future<void> logout() async {
     await SupabaseService.signOut();
     state = const AuthState(

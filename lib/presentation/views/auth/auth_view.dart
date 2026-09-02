@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/google_account_picker_modal.dart';
 
 class AuthView extends ConsumerStatefulWidget {
   final bool initialIsSignUp;
@@ -262,11 +263,11 @@ class _AuthViewState extends ConsumerState<AuthView> {
                   child: OutlinedButton(
                     onPressed: authState.isLoading
                         ? null
-                        : () async {
-                            final success = await ref.read(authProvider.notifier).signInWithGoogle();
-                            if (success && context.mounted) {
-                              context.go('/dashboard');
-                            }
+                        : () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => const GoogleAccountPickerModal(),
+                            );
                           },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.borderActive),
