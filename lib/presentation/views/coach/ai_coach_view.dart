@@ -111,17 +111,17 @@ class AICoachView extends ConsumerWidget {
                       children: [
                         const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.amber),
                         const SizedBox(width: 8),
-                        Text('FRICTION & BOTTLENECK DIAGNOSIS', style: AppTypography.heading2),
+                        Text('FRICTION & BOTTLENECK DIAGNOSIS', style: AppTypography.heading2.copyWith(fontSize: 14)),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(report.frictionDiagnosis, style: AppTypography.bodyMedium.copyWith(color: AppColors.textMedium, height: 1.5)),
+                    Text(report.frictionDiagnosis, style: AppTypography.bodyMedium.copyWith(color: AppColors.textMedium)),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Auto-Generated Tomorrow's Plan
+              // Tomorrow Plan
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -132,27 +132,21 @@ class AICoachView extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text('RECOMMENDED TOMORROW SCHEDULE', style: AppTypography.heading2),
-                        const Spacer(),
-                        Text('Dynamic AI Calibration', style: AppTypography.caption.copyWith(color: AppColors.cyan)),
-                      ],
-                    ),
+                    Text('AI PROPOSED ACTION PLAN', style: AppTypography.heading2.copyWith(fontSize: 14)),
                     const SizedBox(height: 14),
                     ...report.tomorrowPlan.map((slot) {
                       return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceTier2,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: AppColors.borderSubtle),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 100,
+                              width: 120,
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.surfaceTier1,
@@ -177,6 +171,59 @@ class AICoachView extends ConsumerWidget {
                       );
                     }),
                   ],
+                ),
+              ),
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 60),
+                child: Center(
+                  child: Container(
+                    width: 480,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceTier1,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.auto_awesome_outlined,
+                            size: 42, color: AppColors.textSubtle),
+                        const SizedBox(height: 14),
+                        Text('No retrospective synthesized yet',
+                            style: AppTypography.heading2.copyWith(fontSize: 16)),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Click "RUN EVENING SYNTHESIS" to analyze your real completed tasks, Striver DSA progress, and focus sessions.',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textMuted, fontSize: 13),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: coachState.isAnalyzing
+                              ? null
+                              : () => coachNotifier.triggerSynthesis(),
+                          icon: const Icon(Icons.auto_awesome_rounded,
+                              size: 16, color: Color(0xFF0B0D13)),
+                          label: Text(
+                            'RUN FIRST SYNTHESIS',
+                            style: AppTypography.monoBadge.copyWith(
+                              color: const Color(0xFF0B0D13),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.cyan,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

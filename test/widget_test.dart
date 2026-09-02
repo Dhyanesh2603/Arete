@@ -15,6 +15,8 @@ import 'package:arete_os/domain/models/knowledge_note.dart';
 import 'package:arete_os/presentation/providers/resources_provider.dart';
 import 'package:arete_os/presentation/providers/ai_coach_provider.dart';
 import 'package:arete_os/presentation/providers/auth_provider.dart';
+import 'package:arete_os/domain/models/calendar_event.dart';
+import 'package:arete_os/domain/models/learning_resource.dart';
 import 'package:arete_os/core/utils/natural_language_parser.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,20 +116,34 @@ void main() {
     expect(updated.cohort.members.firstWhere((m) => m.email == 'partner@example.com').isInvited, isTrue);
   });
 
-  test('Projects Notifier shifts tasks across Kanban columns', () {
+  test('Projects Notifier starts empty and shifts tasks across Kanban columns', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    final projects = container.read(projectsProvider);
-    expect(projects, isNotEmpty);
+    expect(container.read(projectsProvider), isEmpty);
 
-    final project = projects.first;
-    final task = project.tasks.first;
+    await container.read(projectsProvider.notifier).createProject(
+          title: 'Test Project',
+          goalTitle: 'Test Goal',
+          architectureMarkdown: 'Architecture notes',
+          deadline: DateTime.now().add(const Duration(days: 30)),
+        );
 
-    container.read(projectsProvider.notifier).moveTask(project.id, task.id, ProjectColumn.inReview);
+    final project = container.read(projectsProvider).first;
+    await container.read(projectsProvider.notifier).addProjectTask(
+          project.id,
+          ProjectTask(
+            id: 'test-pt',
+            projectId: project.id,
+            title: 'Test Task',
+            column: ProjectColumn.backlog,
+          ),
+        );
+
+    await container.read(projectsProvider.notifier).moveTask(project.id, 'test-pt', ProjectColumn.inReview);
 
     final updatedProjects = container.read(projectsProvider);
-    final updatedTask = updatedProjects.first.tasks.firstWhere((t) => t.id == task.id);
+    final updatedTask = updatedProjects.first.tasks.firstWhere((t) => t.id == 'test-pt');
     expect(updatedTask.column, equals(ProjectColumn.inReview));
   });
 
@@ -148,18 +164,29 @@ void main() {
     expect(container.read(tasksProvider).tasks.firstWhere((t) => t.id == 'test-tk').isCompleted, isTrue);
   });
 
-  test('Calendar Notifier toggles block completion', () {
+  test('Calendar Notifier starts empty and adds blocks with completion toggle', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
+    expect(container.read(calendarProvider).blocks, isEmpty);
+
+    final now = DateTime.now();
+    container.read(calendarProvider.notifier).addBlock(
+          title: 'Test Block',
+          subtitle: 'Notes',
+          startTime: now,
+          endTime: now.add(const Duration(hours: 1)),
+          type: CalendarBlockType.deepWork,
+        );
+
     final blocks = container.read(calendarProvider).blocks;
-    expect(blocks, isNotEmpty);
+    expect(blocks, hasLength(1));
 
     final block = blocks.first;
     container.read(calendarProvider.notifier).toggleBlockCompleted(block.id);
 
     final updated = container.read(calendarProvider).blocks.firstWhere((b) => b.id == block.id);
-    expect(updated.isCompleted, equals(!block.isCompleted));
+    expect(updated.isCompleted, isTrue);
   });
 
   test('Knowledge Base Notifier creates notes', () {
@@ -178,26 +205,40 @@ void main() {
     expect(container.read(knowledgeProvider).any((n) => n.id == 'test-note'), isTrue);
   });
 
-  test('Resources Notifier updates chapter units progress', () {
+  test('Resources Notifier starts empty and adds resource with chapter tracking', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    final resources = container.read(resourcesProvider);
-    expect(resources, isNotEmpty);
+    expect(container.read(resourcesProvider), isEmpty);
 
-    final res = resources.first;
-    container.read(resourcesProvider.notifier).updateUnits(res.id, 55);
+    await container.read(resourcesProvider.notifier).addResource(
+          const LearningResource(
+            id: 'res-test',
+            title: 'Test Course',
+            authorOrPlatform: 'Test Platform',
+            type: ResourceType.course,
+            totalUnits: 100,
+            completedUnits: 0,
+            keyTakeaways: 'Notes',
+          ),
+        );
 
-    final updated = container.read(resourcesProvider).firstWhere((r) => r.id == res.id);
-    expect(updated.completedUnits, equals(55));
+    await container.read(resourcesProvider.notifier).updateUnits('res-test', 25);
+
+    final updated = container.read(resourcesProvider).firstWhere((r) => r.id == 'res-test');
+    expect(updated.completedUnits, equals(25));
   });
 
-  test('AI Coach generates retrospective synthesis report', () async {
+  test('AI Coach starts empty and dynamically generates synthesis report on trigger', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    final initialReport = container.read(aiCoachProvider).latestReport;
-    expect(initialReport, isNotNull);
-    expect(initialReport!.deepWorkLoggedHours, greaterThan(0));
+    expect(container.read(aiCoachProvider).latestReport, isNull);
+
+    await container.read(aiCoachProvider.notifier).triggerSynthesis();
+
+    final report = container.read(aiCoachProvider).latestReport;
+    expect(report, isNotNull);
+    expect(report!.assessment, isNotEmpty);
   });
 }

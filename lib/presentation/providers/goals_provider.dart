@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/goal.dart';
 import '../../domain/models/milestone.dart';
 import '../../domain/models/task.dart';
+import 'auth_provider.dart';
 
 class GoalsState {
   final List<Goal> goals;
@@ -23,129 +26,136 @@ class GoalsState {
     return pending.first;
   }
 
-  double get overallVelocityFactor => 1.14; // +14% ahead of schedule
+  double get overallVelocityFactor {
+    if (goals.isEmpty) return 0.0;
+    final totalProgress =
+        goals.fold(0.0, (sum, g) => sum + g.weightedProgress);
+    return totalProgress / (goals.length * 100.0);
+  }
 }
 
 class GoalsNotifier extends StateNotifier<GoalsState> {
-  GoalsNotifier() : super(_initialData());
+  final Ref _ref;
+  String? _currentUserId;
 
-  static GoalsState _initialData() {
-    final goals = [
-      Goal(
-        id: 'g-1',
-        identityTitle: 'Senior Distributed AI Systems Architect',
-        title: 'Master Striver A2Z DSA Sheet & Land Staff Software Role',
-        objectiveStatement:
-            'Solve 455+ curated algorithmic problems, build production GPU kernels, and achieve top percentile rank.',
-        targetDeadline: DateTime.now().add(const Duration(days: 180)),
-        priority: GoalPriority.p0Critical,
-        status: GoalStatus.active,
-        weightedProgress: 38.5,
-        totalMilestones: 4,
-        completedMilestones: 1,
-      ),
-      Goal(
-        id: 'g-2',
-        identityTitle: 'Sovereign Technical Founder',
-        title: 'Ship Arete Web to 1,000 Active Cohort Members',
-        objectiveStatement:
-            'Build the fastest, zero-clutter personal platform and launch on desktop web.',
-        targetDeadline: DateTime.now().add(const Duration(days: 90)),
-        priority: GoalPriority.p1Strategic,
-        status: GoalStatus.active,
-        weightedProgress: 65.0,
-        totalMilestones: 3,
-        completedMilestones: 2,
-      ),
-    ];
+  GoalsNotifier(this._ref)
+      : super(const GoalsState(goals: [], milestones: [], tasks: [])) {
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      final newUserId = next.user?.id;
+      if (newUserId != _currentUserId) {
+        _currentUserId = newUserId;
+        if (newUserId != null) {
+          _loadGoals(newUserId);
+        } else {
+          state = const GoalsState(goals: [], milestones: [], tasks: []);
+        }
+      }
+    });
 
-    final milestones = [
-      Milestone(
-        id: 'm-1',
-        goalId: 'g-1',
-        title: 'Step 1-4: Basics, Sorting, Arrays & Binary Search',
-        weightMultiplier: 2.0,
-        deadline: DateTime.now().add(const Duration(days: 14)),
-        status: MilestoneStatus.completed,
-        progressPercentage: 100.0,
-      ),
-      Milestone(
-        id: 'm-2',
-        goalId: 'g-1',
-        title: 'Step 6-10: LinkedList, Recursion, Stack/Queues & Sliding Window',
-        weightMultiplier: 3.0,
-        deadline: DateTime.now().add(const Duration(days: 45)),
-        status: MilestoneStatus.active,
-        progressPercentage: 42.0,
-      ),
-      Milestone(
-        id: 'm-3',
-        goalId: 'g-1',
-        title: 'Step 13-15: Binary Trees, BST & Graph Algorithms',
-        weightMultiplier: 4.0,
-        deadline: DateTime.now().add(const Duration(days: 90)),
-        status: MilestoneStatus.active,
-        progressPercentage: 18.0,
-      ),
-      Milestone(
-        id: 'm-4',
-        goalId: 'g-1',
-        title: 'Step 16-18: Dynamic Programming, Tries & Advanced Patterns',
-        weightMultiplier: 5.0,
-        deadline: DateTime.now().add(const Duration(days: 150)),
-        status: MilestoneStatus.pending,
-        progressPercentage: 0.0,
-        dependencyIds: ['m-2', 'm-3'],
-      ),
-    ];
-
-    final tasks = [
-      const Task(
-        id: 't-1',
-        title: 'Solve Binary Tree Maximum Path Sum (LeetCode 124)',
-        milestoneId: 'm-3',
-        milestoneTitle: 'Step 13: Binary Trees',
-        priority: TaskPriority.high,
-        estimatedMinutes: 45,
-        isCompleted: false,
-      ),
-      const Task(
-        id: 't-2',
-        title: 'Review Lowest Common Ancestor (LCA) Approach in BST',
-        milestoneId: 'm-3',
-        milestoneTitle: 'Step 14: Binary Search Trees',
-        priority: TaskPriority.medium,
-        estimatedMinutes: 30,
-        isCompleted: false,
-      ),
-      const Task(
-        id: 't-3',
-        title: 'Complete 3 Practice Problems on Monotonic Stack',
-        milestoneId: 'm-2',
-        milestoneTitle: 'Step 9: Stack and Queues',
-        priority: TaskPriority.medium,
-        estimatedMinutes: 60,
-        isCompleted: true,
-      ),
-    ];
-
-    return GoalsState(goals: goals, milestones: milestones, tasks: tasks);
+    final initialUser = _ref.read(authProvider).user;
+    if (initialUser != null) {
+      _currentUserId = initialUser.id;
+      _loadGoals(initialUser.id);
+    }
   }
 
-  void toggleTask(String taskId) {
-    state = GoalsState(
-      goals: state.goals,
-      milestones: state.milestones,
-      tasks: state.tasks.map((t) {
-        if (t.id == taskId) {
-          return t.copyWith(isCompleted: !t.isCompleted);
-        }
-        return t;
-      }).toList(),
+  Future<void> _loadGoals(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('arete_user_${userId}_goals');
+    if (raw == null) {
+      state = const GoalsState(goals: [], milestones: [], tasks: []);
+      return;
+    }
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      final goals = list.map((item) {
+        final m = item as Map<String, dynamic>;
+        final pStr = m['priority'] as String? ?? 'p1Strategic';
+        final priority = GoalPriority.values.firstWhere(
+          (p) => p.name == pStr,
+          orElse: () => GoalPriority.p1Strategic,
+        );
+        final sStr = m['status'] as String? ?? 'active';
+        final status = GoalStatus.values.firstWhere(
+          (s) => s.name == sStr,
+          orElse: () => GoalStatus.active,
+        );
+
+        return Goal(
+          id: m['id'] as String,
+          identityTitle: m['identityTitle'] as String? ?? '',
+          title: m['title'] as String,
+          objectiveStatement: m['objectiveStatement'] as String? ?? '',
+          targetDeadline: DateTime.tryParse(m['targetDeadline'] as String? ?? '') ??
+              DateTime.now().add(const Duration(days: 90)),
+          priority: priority,
+          status: status,
+          weightedProgress: (m['weightedProgress'] as num?)?.toDouble() ?? 0.0,
+          totalMilestones: m['totalMilestones'] as int? ?? 0,
+          completedMilestones: m['completedMilestones'] as int? ?? 0,
+        );
+      }).toList();
+
+      state = GoalsState(goals: goals, milestones: [], tasks: []);
+    } catch (_) {
+      state = const GoalsState(goals: [], milestones: [], tasks: []);
+    }
+  }
+
+  Future<void> createGoal({
+    required String identityTitle,
+    required String title,
+    required String objectiveStatement,
+    required DateTime targetDeadline,
+    required GoalPriority priority,
+  }) async {
+    final goal = Goal(
+      id: 'g-${DateTime.now().millisecondsSinceEpoch}',
+      identityTitle: identityTitle.trim(),
+      title: title.trim(),
+      objectiveStatement: objectiveStatement.trim(),
+      targetDeadline: targetDeadline,
+      priority: priority,
+      status: GoalStatus.active,
+      weightedProgress: 0.0,
+      totalMilestones: 0,
+      completedMilestones: 0,
     );
+    final updated = [...state.goals, goal];
+    state = GoalsState(
+        goals: updated, milestones: state.milestones, tasks: state.tasks);
+    await _persist(updated);
+  }
+
+  Future<void> deleteGoal(String goalId) async {
+    final updated = state.goals.where((g) => g.id != goalId).toList();
+    state = GoalsState(
+        goals: updated, milestones: state.milestones, tasks: state.tasks);
+    await _persist(updated);
+  }
+
+  Future<void> _persist(List<Goal> goals) async {
+    if (_currentUserId == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final data = goals
+        .map((g) => {
+              'id': g.id,
+              'identityTitle': g.identityTitle,
+              'title': g.title,
+              'objectiveStatement': g.objectiveStatement,
+              'targetDeadline': g.targetDeadline.toIso8601String(),
+              'priority': g.priority.name,
+              'status': g.status.name,
+              'weightedProgress': g.weightedProgress,
+              'totalMilestones': g.totalMilestones,
+              'completedMilestones': g.completedMilestones,
+            })
+        .toList();
+    await prefs.setString(
+        'arete_user_${_currentUserId}_goals', jsonEncode(data));
   }
 }
 
 final goalsProvider = StateNotifierProvider<GoalsNotifier, GoalsState>((ref) {
-  return GoalsNotifier();
+  return GoalsNotifier(ref);
 });

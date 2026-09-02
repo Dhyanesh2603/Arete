@@ -52,11 +52,12 @@ class FocusSessionNotifier extends StateNotifier<ActiveFocusSession> {
 
   FocusSessionNotifier()
       : super(const ActiveFocusSession(
-          taskTitle: 'Binary Tree Maximum Path Sum (LeetCode 124)',
-          objective: 'Master bottom-up recursion & sub-path contribution tracking',
-          totalSeconds: 45 * 60,
-          remainingSeconds: 42 * 60 + 18,
+          taskTitle: 'Deep Work Focus Block',
+          objective: 'Select a task to begin high-leverage focus',
+          totalSeconds: 25 * 60,
+          remainingSeconds: 25 * 60,
           state: FocusModeState.idle,
+          focusQualityScore: 0.0,
         ));
 
   void startSession({

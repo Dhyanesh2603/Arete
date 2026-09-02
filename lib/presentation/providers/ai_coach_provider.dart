@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/ai_coach_report.dart';
+import 'dsa_provider.dart';
+import 'habits_provider.dart';
+import 'tasks_provider.dart';
 
 class AiCoachState {
   final AiCoachReport? latestReport;
@@ -26,56 +29,54 @@ class AiCoachState {
 }
 
 class AiCoachNotifier extends StateNotifier<AiCoachState> {
-  AiCoachNotifier() : super(_initialReportState());
+  final Ref _ref;
 
-  static AiCoachState _initialReportState() {
-    final report = AiCoachReport(
-      date: DateTime.now(),
-      assessment:
-          'Exceptional deep work focus logged today (3.5 hours). You solved 4 Striver A2Z problems across Binary Trees with a 98% habit consistency score. Morning focus window (08:00 - 10:30) yielded peak velocity.',
-      frictionDiagnosis:
-          'Zero critical path blockers. Slight energy dip noted at 15:00; recommend inserting a 15-minute physical walk between Deep Work blocks to maintain evening retention.',
-      deepWorkLoggedHours: 3.5,
-      problemsSolved: 4,
-      habitsCompleted: 4,
-      tomorrowPlan: [
-        const TomorrowTaskPlan(
-          timeSlot: '08:00 - 10:00',
-          title: 'Deep Work: Binary Tree Vertical Order & Top/Bottom View',
-          cognitiveTier: 'Deep 3x',
-        ),
-        const TomorrowTaskPlan(
-          timeSlot: '10:30 - 11:30',
-          title: 'DSA Squad Peer Study Session',
-          cognitiveTier: 'Medium 2x',
-        ),
-        const TomorrowTaskPlan(
-          timeSlot: '14:00 - 16:00',
-          title: 'GPU Triton Kernel: Benchmark Shared Memory Bandwidth',
-          cognitiveTier: 'Deep 3x',
-        ),
-        const TomorrowTaskPlan(
-          timeSlot: '17:30 - 18:30',
-          title: 'Physical Training & Evening Recovery',
-          cognitiveTier: 'Shallow 1x',
-        ),
-      ],
-    );
-
-    return AiCoachState(
-      latestReport: report,
-      historicalReports: [report],
-    );
-  }
+  AiCoachNotifier(this._ref)
+      : super(const AiCoachState(latestReport: null, historicalReports: []));
 
   Future<void> triggerSynthesis() async {
     state = state.copyWith(isAnalyzing: true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    state = state.copyWith(isAnalyzing: false);
+    await Future.delayed(const Duration(milliseconds: 900));
+
+    final dsaState = _ref.read(dsaProvider);
+    final tasksState = _ref.read(tasksProvider);
+    final habits = _ref.read(habitsProvider);
+
+    final solvedProblems = dsaState.solvedCount;
+    final completedTasks = tasksState.completedCount;
+    final completedHabits = habits.where((h) => h.isCompletedToday).length;
+
+    final assessmentText = solvedProblems == 0 && completedTasks == 0
+        ? 'Clean workspace initialized. Add priority tasks in the Unified Task Matrix and solve Striver A2Z problems to generate personalized cognitive recommendations.'
+        : 'Telemetry shows $solvedProblems algorithmic problem${solvedProblems == 1 ? '' : 's'} solved and $completedTasks priority task${completedTasks == 1 ? '' : 's'} completed. Keep momentum high and maintain focused daily execution.';
+
+    final report = AiCoachReport(
+      date: DateTime.now(),
+      assessment: assessmentText,
+      frictionDiagnosis: completedTasks == 0
+          ? 'No bottlenecks detected. Recommended action: schedule your first 25-minute deep focus sprint.'
+          : 'High velocity noted across completed tasks. Protect your morning focus blocks.',
+      deepWorkLoggedHours: 0.0,
+      problemsSolved: solvedProblems,
+      habitsCompleted: completedHabits,
+      tomorrowPlan: tasksState.tasks.where((t) => !t.isCompleted).take(3).map((t) {
+        return TomorrowTaskPlan(
+          timeSlot: 'Morning Priority',
+          title: t.title,
+          cognitiveTier: 'Deep 3x',
+        );
+      }).toList(),
+    );
+
+    state = state.copyWith(
+      isAnalyzing: false,
+      latestReport: report,
+      historicalReports: [report, ...state.historicalReports],
+    );
   }
 }
 
 final aiCoachProvider =
     StateNotifierProvider<AiCoachNotifier, AiCoachState>((ref) {
-  return AiCoachNotifier();
+  return AiCoachNotifier(ref);
 });

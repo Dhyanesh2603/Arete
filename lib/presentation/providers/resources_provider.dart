@@ -1,63 +1,108 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/learning_resource.dart';
+import 'auth_provider.dart';
 
 class ResourcesNotifier extends StateNotifier<List<LearningResource>> {
-  ResourcesNotifier() : super(_initialResources());
+  final Ref _ref;
+  String? _currentUserId;
 
-  static List<LearningResource> _initialResources() {
-    return [
-      const LearningResource(
-        id: 'res-1',
-        title: "Striver's A2Z DSA Course & Sheet",
-        authorOrPlatform: 'takeuforward / Raj Vikramaditya',
-        type: ResourceType.course,
-        totalUnits: 455,
-        completedUnits: 48,
-        keyTakeaways: 'Complete pattern-based algorithmic mastery across 18 progressive steps.',
-        externalUrl: 'https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2/',
-      ),
-      const LearningResource(
-        id: 'res-2',
-        title: 'Designing Data-Intensive Applications (DDIA)',
-        authorOrPlatform: 'Martin Kleppmann (O’Reilly)',
-        type: ResourceType.book,
-        totalUnits: 12,
-        completedUnits: 8,
-        keyTakeaways: 'Transactions, Linearizability, Raft Consensus, Distributed Storage Engines.',
-      ),
-      const LearningResource(
-        id: 'res-3',
-        title: 'FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning',
-        authorOrPlatform: 'Tri Dao et al. (Stanford AI)',
-        type: ResourceType.researchPaper,
-        totalUnits: 18,
-        completedUnits: 14,
-        keyTakeaways: 'Tiled SRAM memory IO reduction, forward and backward pass parallelization.',
-      ),
-      const LearningResource(
-        id: 'res-4',
-        title: 'Triton Language & Compiler Documentation',
-        authorOrPlatform: 'OpenAI Triton Community',
-        type: ResourceType.documentation,
-        totalUnits: 25,
-        completedUnits: 16,
-        keyTakeaways: 'Python-like programming model for writing highly optimized custom GPU kernels.',
-        externalUrl: 'https://triton-lang.org/',
-      ),
-    ];
+  ResourcesNotifier(this._ref) : super([]) {
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      final newUserId = next.user?.id;
+      if (newUserId != _currentUserId) {
+        _currentUserId = newUserId;
+        if (newUserId != null) {
+          _loadResources(newUserId);
+        } else {
+          state = [];
+        }
+      }
+    });
+
+    final initialUser = _ref.read(authProvider).user;
+    if (initialUser != null) {
+      _currentUserId = initialUser.id;
+      _loadResources(initialUser.id);
+    }
   }
 
-  void updateUnits(String id, int completed) {
-    state = state.map((r) {
+  Future<void> _loadResources(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('arete_user_${userId}_resources');
+    if (raw == null) {
+      state = [];
+      return;
+    }
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      state = list.map((item) {
+        final m = item as Map<String, dynamic>;
+        final typeStr = m['type'] as String? ?? 'course';
+        final type = ResourceType.values.firstWhere(
+          (t) => t.name == typeStr,
+          orElse: () => ResourceType.course,
+        );
+
+        return LearningResource(
+          id: m['id'] as String,
+          title: m['title'] as String,
+          authorOrPlatform: m['authorOrPlatform'] as String? ?? '',
+          type: type,
+          totalUnits: m['totalUnits'] as int? ?? 1,
+          completedUnits: m['completedUnits'] as int? ?? 0,
+          keyTakeaways: m['keyTakeaways'] as String? ?? '',
+          externalUrl: m['externalUrl'] as String?,
+        );
+      }).toList();
+    } catch (_) {
+      state = [];
+    }
+  }
+
+  Future<void> addResource(LearningResource resource) async {
+    final updated = [...state, resource];
+    state = updated;
+    await _persist(updated);
+  }
+
+  Future<void> deleteResource(String id) async {
+    final updated = state.where((r) => r.id != id).toList();
+    state = updated;
+    await _persist(updated);
+  }
+
+  Future<void> updateUnits(String id, int completed) async {
+    final updated = state.map((r) {
       if (r.id == id) {
         return r.copyWith(completedUnits: completed.clamp(0, r.totalUnits));
       }
       return r;
     }).toList();
+    state = updated;
+    await _persist(updated);
+  }
+
+  Future<void> _persist(List<LearningResource> resources) async {
+    if (_currentUserId == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final data = resources.map((r) => {
+          'id': r.id,
+          'title': r.title,
+          'authorOrPlatform': r.authorOrPlatform,
+          'type': r.type.name,
+          'totalUnits': r.totalUnits,
+          'completedUnits': r.completedUnits,
+          'keyTakeaways': r.keyTakeaways,
+          'externalUrl': r.externalUrl,
+        }).toList();
+    await prefs.setString(
+        'arete_user_${_currentUserId}_resources', jsonEncode(data));
   }
 }
 
 final resourcesProvider =
     StateNotifierProvider<ResourcesNotifier, List<LearningResource>>((ref) {
-  return ResourcesNotifier();
+  return ResourcesNotifier(ref);
 });

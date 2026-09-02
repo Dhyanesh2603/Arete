@@ -41,35 +41,7 @@ class CalendarNotifier extends StateNotifier<CalendarState> {
 
     return CalendarState(
       selectedDate: today,
-      blocks: [
-        CalendarBlock(
-          id: 'cb-1',
-          title: 'Deep Work: DSA Striver Step 13',
-          subtitle: 'Binary Trees LCA & Diameter',
-          startTime: DateTime(now.year, now.month, now.day, 8, 0),
-          endTime: DateTime(now.year, now.month, now.day, 10, 30),
-          type: CalendarBlockType.deepWork,
-          isCompleted: true,
-        ),
-        CalendarBlock(
-          id: 'cb-2',
-          title: 'Deep Work: LeetCode 124 Max Path Sum',
-          subtitle: 'Recursive subtree reduction',
-          startTime: DateTime(now.year, now.month, now.day, 11, 0),
-          endTime: DateTime(now.year, now.month, now.day, 12, 30),
-          type: CalendarBlockType.deepWork,
-          isCompleted: false,
-        ),
-        CalendarBlock(
-          id: 'cb-3',
-          title: 'Study Squad Peer Review',
-          subtitle: 'Review Step 13 with study partner',
-          startTime: DateTime(now.year, now.month, now.day, 14, 30),
-          endTime: DateTime(now.year, now.month, now.day, 15, 30),
-          type: CalendarBlockType.studyCohort,
-          isCompleted: false,
-        ),
-      ],
+      blocks: [],
     );
   }
 
