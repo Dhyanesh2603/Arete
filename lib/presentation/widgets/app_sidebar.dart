@@ -26,80 +26,132 @@ class AppSidebar extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           // App Logo / Symbol
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.cyanBg,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4), width: 1),
-            ),
-            child: Center(
-              child: Text(
-                'A',
-                style: AppTypography.heading2.copyWith(
-                  color: AppColors.cyan,
-                  fontWeight: FontWeight.w800,
+          InkWell(
+            onTap: () => context.go('/dashboard'),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.cyanBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: AppColors.cyan.withValues(alpha: 0.4), width: 1),
+              ),
+              child: Center(
+                child: Text(
+                  'A',
+                  style: AppTypography.heading2.copyWith(
+                    color: AppColors.cyan,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          // Nav Items
-          _buildNavItem(
-            context,
-            icon: Icons.dashboard_outlined,
-            activeIcon: Icons.dashboard_rounded,
-            route: '/dashboard',
-            tooltip: 'Mission Control',
+          const SizedBox(height: 16),
+          // Nav Items Scrollable Rail
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildNavItem(
+                    context,
+                    icon: Icons.dashboard_outlined,
+                    activeIcon: Icons.dashboard_rounded,
+                    route: '/dashboard',
+                    tooltip: 'Mission Control HUD',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.code_rounded,
+                    activeIcon: Icons.code_rounded,
+                    route: '/dsa',
+                    tooltip: 'Striver A2Z DSA Tracker',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.groups_outlined,
+                    activeIcon: Icons.groups_rounded,
+                    route: '/cohort',
+                    tooltip: 'DSA Cohort War-Room',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.flag_outlined,
+                    activeIcon: Icons.flag_rounded,
+                    route: '/goals',
+                    tooltip: 'Strategic Goals & DAG',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.view_kanban_outlined,
+                    activeIcon: Icons.view_kanban_rounded,
+                    route: '/projects',
+                    tooltip: 'Projects & Kanban Matrix',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.checklist_rounded,
+                    activeIcon: Icons.checklist_rounded,
+                    route: '/tasks',
+                    tooltip: 'Unified Task Matrix',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.calendar_month_outlined,
+                    activeIcon: Icons.calendar_month_rounded,
+                    route: '/calendar',
+                    tooltip: 'Time-Blocking & Agenda',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.repeat_rounded,
+                    activeIcon: Icons.repeat_rounded,
+                    route: '/habits',
+                    tooltip: 'Habit Consistency Vectors',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.timer_outlined,
+                    activeIcon: Icons.timer_rounded,
+                    route: '/focus',
+                    tooltip: 'Deep Work Focus Mode',
+                    isPulseGlow: isFocusActive,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.menu_book_outlined,
+                    activeIcon: Icons.menu_book_rounded,
+                    route: '/knowledge',
+                    tooltip: 'Markdown Knowledge Base',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.school_outlined,
+                    activeIcon: Icons.school_rounded,
+                    route: '/resources',
+                    tooltip: 'Learning Curriculum',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.auto_awesome_outlined,
+                    activeIcon: Icons.auto_awesome_rounded,
+                    route: '/coach',
+                    tooltip: 'AI Cognitive Coach',
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.analytics_outlined,
+                    activeIcon: Icons.analytics_rounded,
+                    route: '/analytics',
+                    tooltip: 'Life Telemetry',
+                  ),
+                ],
+              ),
+            ),
           ),
-          _buildNavItem(
-            context,
-            icon: Icons.code_rounded,
-            activeIcon: Icons.code_rounded,
-            route: '/dsa',
-            tooltip: 'Striver A2Z DSA Sheet',
-            badgeCount: 4,
-          ),
-          _buildNavItem(
-            context,
-            icon: Icons.groups_outlined,
-            activeIcon: Icons.groups_rounded,
-            route: '/cohort',
-            tooltip: 'DSA Cohort War-Room',
-          ),
-          _buildNavItem(
-            context,
-            icon: Icons.flag_outlined,
-            activeIcon: Icons.flag_rounded,
-            route: '/goals',
-            tooltip: 'Goals & Milestones',
-          ),
-          _buildNavItem(
-            context,
-            icon: Icons.repeat_rounded,
-            activeIcon: Icons.repeat_rounded,
-            route: '/habits',
-            tooltip: 'Habits & Streaks',
-          ),
-          _buildNavItem(
-            context,
-            icon: Icons.timer_outlined,
-            activeIcon: Icons.timer_rounded,
-            route: '/focus',
-            tooltip: 'Deep Work Focus Mode',
-            isPulseGlow: isFocusActive,
-          ),
-          _buildNavItem(
-            context,
-            icon: Icons.analytics_outlined,
-            activeIcon: Icons.analytics_rounded,
-            route: '/analytics',
-            tooltip: 'Life Telemetry',
-          ),
-          const Spacer(),
           // Command Palette Trigger (Cmd+K)
           Tooltip(
             message: 'Command Palette (Cmd+K)',
@@ -111,7 +163,7 @@ class AppSidebar extends ConsumerWidget {
               child: Container(
                 width: 42,
                 height: 42,
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(bottom: 6),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceTier2,
                   borderRadius: BorderRadius.circular(8),
@@ -134,7 +186,7 @@ class AppSidebar extends ConsumerWidget {
             route: '/settings',
             tooltip: 'Settings',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -146,13 +198,12 @@ class AppSidebar extends ConsumerWidget {
     required IconData activeIcon,
     required String route,
     required String tooltip,
-    int? badgeCount,
     bool isPulseGlow = false,
   }) {
     final isActive = currentRoute == route;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Tooltip(
         message: tooltip,
         child: InkWell(
@@ -164,8 +215,8 @@ class AppSidebar extends ConsumerWidget {
           borderRadius: BorderRadius.circular(8),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: isActive ? AppColors.surfaceHover : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
@@ -183,7 +234,7 @@ class AppSidebar extends ConsumerWidget {
               children: [
                 Icon(
                   isActive ? activeIcon : icon,
-                  size: 20,
+                  size: 19,
                   color: isActive
                       ? AppColors.cyan
                       : isPulseGlow
@@ -192,8 +243,8 @@ class AppSidebar extends ConsumerWidget {
                 ),
                 if (isPulseGlow)
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 6,
+                    right: 6,
                     child: Container(
                       width: 6,
                       height: 6,
@@ -206,8 +257,8 @@ class AppSidebar extends ConsumerWidget {
                 if (isActive)
                   Positioned(
                     left: 0,
-                    top: 10,
-                    bottom: 10,
+                    top: 8,
+                    bottom: 8,
                     child: Container(
                       width: 3,
                       decoration: BoxDecoration(

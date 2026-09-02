@@ -6,6 +6,8 @@ import '../../core/theme/app_typography.dart';
 import '../providers/command_palette_provider.dart';
 import '../providers/dsa_provider.dart';
 import '../providers/focus_session_provider.dart';
+import '../providers/projects_provider.dart';
+import '../providers/tasks_provider.dart';
 
 class CommandPaletteModal extends ConsumerStatefulWidget {
   const CommandPaletteModal({super.key});
@@ -38,12 +40,13 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
   Widget build(BuildContext context) {
     final paletteState = ref.watch(commandPaletteProvider);
     final dsaState = ref.watch(dsaProvider);
+    final projects = ref.watch(projectsProvider);
+    final tasksState = ref.watch(tasksProvider);
     final query = paletteState.query.toLowerCase().trim();
 
-    // Generate matched items
     final List<_CommandItem> items = [];
 
-    // System commands
+    // System Actions
     items.add(_CommandItem(
       title: 'Start 45m Deep Work Focus Session',
       subtitle: 'Launches full-screen focus mode with 40Hz acoustic preset',
@@ -53,14 +56,36 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
         ref.read(commandPaletteProvider.notifier).close();
         ref.read(focusSessionProvider.notifier).startSession(
               taskTitle: 'Deep Work Focus Block',
-              objective: 'Solve Striver A2Z DSA Problems',
+              objective: 'Solve Striver A2Z DSA Problems & Project Tasks',
             );
         context.go('/focus');
       },
     ));
 
     items.add(_CommandItem(
-      title: 'Navigate to Striver A2Z DSA Sheet',
+      title: 'Run AI Evening Retrospective & Synthesis',
+      subtitle: 'Analyze output velocity, friction, and plan tomorrow',
+      category: 'ACTIONS',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/coach');
+      },
+    ));
+
+    // Navigation Targets
+    items.add(_CommandItem(
+      title: 'Navigate to Mission Control Dashboard',
+      subtitle: 'HUD, Concentric vector rings & Hero Next Action',
+      category: 'NAVIGATION',
+      shortcut: 'Cmd+1',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/dashboard');
+      },
+    ));
+
+    items.add(_CommandItem(
+      title: 'Navigate to Striver A2Z DSA Tracker',
       subtitle: '18 Steps, topic filtering, difficulty tags',
       category: 'NAVIGATION',
       shortcut: 'Cmd+2',
@@ -82,15 +107,94 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
     ));
 
     items.add(_CommandItem(
-      title: 'Navigate to Goals & Milestones',
+      title: 'Navigate to Strategic Goals & Milestones',
       subtitle: 'Identity targets & weighted completion DAG',
       category: 'NAVIGATION',
-      shortcut: 'Cmd+4',
       onSelect: () {
         ref.read(commandPaletteProvider.notifier).close();
         context.go('/goals');
       },
     ));
+
+    items.add(_CommandItem(
+      title: 'Navigate to Projects & Kanban Matrix',
+      subtitle: 'Linear-style Kanban boards & architecture specs',
+      category: 'NAVIGATION',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/projects');
+      },
+    ));
+
+    items.add(_CommandItem(
+      title: 'Navigate to Unified Task Matrix',
+      subtitle: 'Priority & cognitive demand filtered task queue',
+      category: 'NAVIGATION',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/tasks');
+      },
+    ));
+
+    items.add(_CommandItem(
+      title: 'Navigate to Time-Blocking Calendar',
+      subtitle: 'Daily agenda & deep work block reservations',
+      category: 'NAVIGATION',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/calendar');
+      },
+    ));
+
+    items.add(_CommandItem(
+      title: 'Navigate to Markdown Knowledge Base',
+      subtitle: 'Architecture notes, algorithms & wiki links',
+      category: 'NAVIGATION',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/knowledge');
+      },
+    ));
+
+    items.add(_CommandItem(
+      title: 'Navigate to Learning Curriculum Resources',
+      subtitle: 'Books, courses, and research paper trackers',
+      category: 'NAVIGATION',
+      onSelect: () {
+        ref.read(commandPaletteProvider.notifier).close();
+        context.go('/resources');
+      },
+    ));
+
+    // Matching Projects
+    for (final p in projects) {
+      if (query.isEmpty || p.title.toLowerCase().contains(query)) {
+        items.add(_CommandItem(
+          title: 'Project: ${p.title}',
+          subtitle: '${p.completedTasks}/${p.totalTasks} Tasks Completed',
+          category: 'PROJECTS',
+          onSelect: () {
+            ref.read(commandPaletteProvider.notifier).close();
+            context.go('/projects');
+          },
+        ));
+      }
+    }
+
+    // Matching Tasks
+    for (final t in tasksState.tasks) {
+      if (query.isEmpty || t.title.toLowerCase().contains(query)) {
+        items.add(_CommandItem(
+          title: t.title,
+          subtitle: '${t.priority.name.toUpperCase()} - ${t.cognitiveTier.name}',
+          category: 'TASKS',
+          onSelect: () {
+            ref.read(commandPaletteProvider.notifier).close();
+            context.go('/tasks');
+          },
+        ));
+      }
+    }
 
     // Matching DSA problems
     for (final p in dsaState.problems) {
@@ -159,7 +263,7 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
                           color: AppColors.textHigh,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Search DSA problems, goals, or type a command...',
+                          hintText: 'Search anything across Arete OS (DSA, Tasks, Projects, Notes)...',
                           hintStyle: AppTypography.bodyLarge.copyWith(
                             color: AppColors.textMuted,
                           ),
@@ -190,7 +294,7 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
                     ? Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          'No matching commands or problems found.',
+                          'No matching commands or entities found.',
                           style: AppTypography.bodyMedium
                               .copyWith(color: AppColors.textMuted),
                         ),
