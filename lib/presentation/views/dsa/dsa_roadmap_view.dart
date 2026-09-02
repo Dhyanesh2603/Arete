@@ -1,279 +1,213 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/striver_a2z_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/models/dsa_problem.dart';
 import '../../providers/dsa_provider.dart';
-import '../../providers/focus_session_provider.dart';
-import '../../providers/peer_cohort_provider.dart';
 import '../../widgets/dsa_problem_card.dart';
 
-class DsaRoadmapView extends ConsumerWidget {
+class DsaRoadmapView extends ConsumerStatefulWidget {
   const DsaRoadmapView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DsaRoadmapView> createState() => _DsaRoadmapViewState();
+}
+
+class _DsaRoadmapViewState extends ConsumerState<DsaRoadmapView> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final dsaState = ref.watch(dsaProvider);
     final dsaNotifier = ref.read(dsaProvider.notifier);
-    final problems = dsaState.filteredProblems;
+    final filteredProblems = dsaState.filteredProblems;
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header & Overall Progress Banner
-            _buildHeader(context, dsaState),
-            const SizedBox(height: 20),
-
-            // Step Selector & Search Row
-            _buildFilterControls(context, ref, dsaState, dsaNotifier),
-            const SizedBox(height: 16),
-
-            // Problem List
+            // Top Header: Title & Actions
             Row(
               children: [
-                Text(
-                  'SHOWING ${problems.length} PROBLEMS',
-                  style: AppTypography.monoBadge.copyWith(
-                    color: AppColors.textMuted,
-                    fontSize: 11,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('STRIVER A2Z DSA MASTERY ENGINE', style: AppTypography.heading1),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Complete 18-step curriculum with Spaced Repetition (SM-2) & Socratic hints.',
+                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
                 ),
                 const Spacer(),
-                Text(
-                  'Click circle to toggle status | Click play to start Deep Work',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSubtle),
+                // Mock Interview Launcher Button
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/mock-interview'),
+                  icon: const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF0B0D13)),
+                  label: Text(
+                    '45M MOCK INTERVIEW',
+                    style: AppTypography.monoBadge.copyWith(
+                      color: const Color(0xFF0B0D13),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cyan,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceTier1,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.borderSubtle),
+                  ),
+                  child: Text(
+                    '${dsaState.solvedCount} / ${dsaState.totalCount} Solved (${((dsaState.solvedCount / (dsaState.totalCount == 0 ? 1 : dsaState.totalCount)) * 100).toStringAsFixed(1)}%)',
+                    style: AppTypography.monoBadge.copyWith(color: AppColors.mint, fontSize: 13),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
 
-            if (problems.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(40),
-                alignment: Alignment.center,
-                child: Text(
-                  'No problems match the selected filters.',
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
-                ),
-              )
-            else
-              ...problems.map((problem) {
-                return DsaProblemCard(
-                  problem: problem,
-                  onToggleStatus: () {
-                    dsaNotifier.toggleStatus(problem.id);
-                    if (problem.status != DsaStatus.solved) {
-                      ref.read(peerCohortProvider.notifier).incrementMyProblemsSolved();
-                    }
-                  },
-                  onStartFocus: () {
-                    ref.read(focusSessionProvider.notifier).startSession(
-                          taskTitle: problem.title,
-                          objective: 'Solve Striver A2Z: ${problem.subTopic} (${problem.pattern})',
-                          durationMinutes: 45,
-                        );
-                    context.go('/focus');
-                  },
-                );
-              }),
+            // Controls & Filters Row
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceTier1,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Column(
+                children: [
+                  // Step Dropdown + Search
+                  Row(
+                    children: [
+                      // Step Selector Dropdown
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceTier2,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.borderSubtle),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            value: dsaState.selectedStepNumber,
+                            dropdownColor: AppColors.surfaceTier1,
+                            hint: Text('All 18 Steps', style: AppTypography.bodyMedium),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('All 18 Steps (Full Sheet)'),
+                              ),
+                              ...dsaState.stepSummaries.map((s) {
+                                return DropdownMenuItem<int?>(
+                                  value: s.stepNumber,
+                                  child: Text('Step ${s.stepNumber}: ${s.title} (${s.solvedProblems}/${s.totalProblems})'),
+                                );
+                              }),
+                            ],
+                            onChanged: (val) => dsaNotifier.setStepFilter(val),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Search Box
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceTier2,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.borderSubtle),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            style: AppTypography.bodyMedium.copyWith(color: AppColors.textHigh),
+                            decoration: InputDecoration(
+                              hintText: 'Search problem, pattern (e.g. Kadane, Two Pointers, BFS)...',
+                              hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                              border: InputBorder.none,
+                              icon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                            ),
+                            onChanged: (val) => dsaNotifier.setSearchQuery(val),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Difficulty + Status + Spaced Repetition Filter Chips
+                  Row(
+                    children: [
+                      Text('Difficulty:', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                      const SizedBox(width: 8),
+                      _buildChip('All', dsaState.selectedDifficulty == null, () => dsaNotifier.setDifficultyFilter(null)),
+                      _buildChip('Easy', dsaState.selectedDifficulty == DsaDifficulty.easy, () => dsaNotifier.setDifficultyFilter(DsaDifficulty.easy), color: AppColors.cyan),
+                      _buildChip('Medium', dsaState.selectedDifficulty == DsaDifficulty.medium, () => dsaNotifier.setDifficultyFilter(DsaDifficulty.medium), color: AppColors.amber),
+                      _buildChip('Hard', dsaState.selectedDifficulty == DsaDifficulty.hard, () => dsaNotifier.setDifficultyFilter(DsaDifficulty.hard), color: AppColors.rose),
+                      const SizedBox(width: 16),
+                      Text('Status:', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                      const SizedBox(width: 8),
+                      _buildChip('All', dsaState.selectedStatus == null, () => dsaNotifier.setStatusFilter(null)),
+                      _buildChip('Solved', dsaState.selectedStatus == DsaStatus.solved, () => dsaNotifier.setStatusFilter(DsaStatus.solved), color: AppColors.mint),
+                      _buildChip('Todo', dsaState.selectedStatus == DsaStatus.todo, () => dsaNotifier.setStatusFilter(DsaStatus.todo)),
+                      const SizedBox(width: 16),
+                      // Spaced Repetition Due Filter
+                      _buildChip(
+                        'Revision Due (${dsaState.revisionDueCount})',
+                        dsaState.filterDueForRevisionOnly,
+                        () => dsaNotifier.toggleRevisionOnlyFilter(),
+                        color: AppColors.amber,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Problem Items List
+            Expanded(
+              child: filteredProblems.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No problems match the current filter criteria.',
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: filteredProblems.length,
+                      itemBuilder: (context, index) {
+                        return DsaProblemCard(problem: filteredProblems[index]);
+                      },
+                    ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, DsaState dsaState) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceTier1,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.cyanBg,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.cyan.withValues(alpha: 0.3)),
-                ),
-                child: Text('STRIVER A2Z DSA SHEET',
-                    style: AppTypography.monoBadge.copyWith(
-                      color: AppColors.cyan,
-                      fontSize: 10,
-                    )),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Complete Data Structures & Algorithms Mastery',
-                style: AppTypography.heading1,
-              ),
-              const Spacer(),
-              Text(
-                '${dsaState.solvedCount} / ${dsaState.totalCount} Solved (${dsaState.overallProgress.toStringAsFixed(1)}%)',
-                style: AppTypography.monoBadge.copyWith(
-                  color: AppColors.mint,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: dsaState.overallProgress / 100.0,
-              backgroundColor: AppColors.surfaceTier2,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.mint),
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Difficulty Breakdown Pills
-          Row(
-            children: [
-              _buildDiffStat('EASY', dsaState.easySolved, dsaState.easyTotal, AppColors.cyan, AppColors.cyanBg),
-              const SizedBox(width: 12),
-              _buildDiffStat('MEDIUM', dsaState.mediumSolved, dsaState.mediumTotal, AppColors.amber, AppColors.amberBg),
-              const SizedBox(width: 12),
-              _buildDiffStat('HARD', dsaState.hardSolved, dsaState.hardTotal, AppColors.rose, AppColors.roseBg),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiffStat(String label, int solved, int total, Color color, Color bgColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Text('$label: ', style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 10)),
-          Text('$solved / $total', style: AppTypography.monoBadge.copyWith(color: color, fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterControls(BuildContext context, WidgetRef ref, DsaState dsaState, DsaNotifier dsaNotifier) {
-    final stepTitles = StriverA2ZData.getStepTitles();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceTier1,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Column(
-        children: [
-          // Step Dropdown & Search Bar
-          Row(
-            children: [
-              // Step Dropdown
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceTier2,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.borderSubtle),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
-                    value: dsaState.selectedStepNumber,
-                    dropdownColor: AppColors.surfaceTier2,
-                    style: AppTypography.bodyMedium.copyWith(color: AppColors.textHigh),
-                    hint: Text('All Steps (1 to 18)', style: AppTypography.bodyMedium.copyWith(color: AppColors.textHigh)),
-                    items: [
-                      DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text('All Steps (1 to 18)', style: AppTypography.bodyMedium),
-                      ),
-                      ...List.generate(18, (index) {
-                        final stepNum = index + 1;
-                        final title = stepNum < stepTitles.length ? stepTitles[stepNum] : 'Step $stepNum';
-                        return DropdownMenuItem<int?>(
-                          value: stepNum,
-                          child: Text(title, style: AppTypography.bodyMedium),
-                        );
-                      }),
-                    ],
-                    onChanged: (val) {
-                      dsaNotifier.setStepFilter(val);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Search Input
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceTier2,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.borderSubtle),
-                  ),
-                  child: TextField(
-                    style: AppTypography.bodyMedium.copyWith(color: AppColors.textHigh),
-                    decoration: InputDecoration(
-                      hintText: 'Search problem, pattern (e.g. Kadane, Two Pointers, BFS, DP)...',
-                      hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
-                      icon: const Icon(Icons.search_rounded, size: 18, color: AppColors.textMuted),
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                    onChanged: (val) {
-                      dsaNotifier.setSearchQuery(val);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Difficulty & Status Filter Chips
-          Row(
-            children: [
-              Text('Difficulty:', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
-              const SizedBox(width: 8),
-              _buildFilterChip('All', dsaState.selectedDifficulty == null, () => dsaNotifier.setDifficultyFilter(null)),
-              _buildFilterChip('Easy', dsaState.selectedDifficulty == DsaDifficulty.easy, () => dsaNotifier.setDifficultyFilter(DsaDifficulty.easy), color: AppColors.cyan),
-              _buildFilterChip('Medium', dsaState.selectedDifficulty == DsaDifficulty.medium, () => dsaNotifier.setDifficultyFilter(DsaDifficulty.medium), color: AppColors.amber),
-              _buildFilterChip('Hard', dsaState.selectedDifficulty == DsaDifficulty.hard, () => dsaNotifier.setDifficultyFilter(DsaDifficulty.hard), color: AppColors.rose),
-              const SizedBox(width: 20),
-              Text('Status:', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
-              const SizedBox(width: 8),
-              _buildFilterChip('All', dsaState.selectedStatus == null, () => dsaNotifier.setStatusFilter(null)),
-              _buildFilterChip('Solved', dsaState.selectedStatus == DsaStatus.solved, () => dsaNotifier.setStatusFilter(DsaStatus.solved), color: AppColors.mint),
-              _buildFilterChip('In Progress', dsaState.selectedStatus == DsaStatus.inProgress, () => dsaNotifier.setStatusFilter(DsaStatus.inProgress), color: AppColors.amber),
-              _buildFilterChip('Todo', dsaState.selectedStatus == DsaStatus.todo, () => dsaNotifier.setStatusFilter(DsaStatus.todo)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap, {Color? color}) {
+  Widget _buildChip(String label, bool isSelected, VoidCallback onTap, {Color? color}) {
     final chipColor = color ?? AppColors.textHigh;
 
     return Padding(
@@ -282,7 +216,7 @@ class DsaRoadmapView extends ConsumerWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.surfaceHover : AppColors.surfaceTier2,
             borderRadius: BorderRadius.circular(4),

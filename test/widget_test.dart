@@ -14,6 +14,7 @@ import 'package:arete_os/presentation/providers/knowledge_provider.dart';
 import 'package:arete_os/domain/models/knowledge_note.dart';
 import 'package:arete_os/presentation/providers/resources_provider.dart';
 import 'package:arete_os/presentation/providers/ai_coach_provider.dart';
+import 'package:arete_os/core/utils/natural_language_parser.dart';
 
 void main() {
   testWidgets('AreteApp boots and displays Mission Control dashboard',
@@ -31,23 +32,43 @@ void main() {
     expect(find.text('DSA SQUAD ALPHA'), findsOneWidget);
   });
 
-  test('DSA Provider accurately filters by difficulty and search query', () {
+  test('DSA Provider calculates Spaced Repetition (SM-2) intervals upon solving', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
     final initial = container.read(dsaProvider);
-    expect(initial.totalCount, greaterThan(20));
+    final todoProblem = initial.problems.firstWhere((p) => p.status == DsaStatus.todo);
 
-    // Filter by Easy
-    container.read(dsaProvider.notifier).setDifficultyFilter(DsaDifficulty.easy);
-    final easyFiltered = container.read(dsaProvider).filteredProblems;
-    expect(easyFiltered.every((p) => p.difficulty == DsaDifficulty.easy), isTrue);
+    // Toggle to solved
+    container.read(dsaProvider.notifier).toggleProblemStatus(todoProblem.id);
 
-    // Reset filter and search query
-    container.read(dsaProvider.notifier).setDifficultyFilter(null);
-    container.read(dsaProvider.notifier).setSearchQuery('Kadane');
-    final searched = container.read(dsaProvider).filteredProblems;
-    expect(searched.any((p) => p.title.contains('Kadane')), isTrue);
+    final updated = container.read(dsaProvider).problems.firstWhere((p) => p.id == todoProblem.id);
+    expect(updated.status, equals(DsaStatus.solved));
+    expect(updated.nextRevisionDate, isNotNull);
+    expect(updated.reviewCount, equals(1));
+  });
+
+  test('Natural Language Task Parser extracts priority, cognitive tier, and duration', () {
+    const input = 'Solve Binary Tree Maximum Path Sum tomorrow #dsa !p0 ~60m @deep3x';
+    final parsed = NaturalLanguageTaskParser.parse(input);
+
+    expect(parsed.title, contains('Binary Tree Maximum Path Sum'));
+    expect(parsed.priority, equals(TaskPriority.p0));
+    expect(parsed.cognitiveTier, equals(CognitiveTier.deep3x));
+    expect(parsed.estimatedMinutes, equals(60));
+    expect(parsed.projectTag, equals('dsa'));
+    expect(parsed.dueDate, isNotNull);
+  });
+
+  test('Task model maps accurately to Eisenhower Quadrants', () {
+    const p0Task = Task(id: '1', title: 'Q1 Task', priority: TaskPriority.p0);
+    expect(p0Task.quadrant, equals(EisenhowerQuadrant.q1DoFirst));
+
+    const p1Task = Task(id: '2', title: 'Q2 Task', priority: TaskPriority.p1);
+    expect(p1Task.quadrant, equals(EisenhowerQuadrant.q2Schedule));
+
+    const p2ShallowTask = Task(id: '3', title: 'Q3 Task', priority: TaskPriority.p2, cognitiveTier: CognitiveTier.shallow1x);
+    expect(p2ShallowTask.quadrant, equals(EisenhowerQuadrant.q3Delegate));
   });
 
   test('Peer Cohort increments solved count upon problem completion', () {

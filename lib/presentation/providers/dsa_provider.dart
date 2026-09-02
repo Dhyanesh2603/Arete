@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/striver_a2z_data.dart';
 import '../../domain/models/dsa_problem.dart';
+import 'peer_cohort_provider.dart';
 
 class DsaState {
   final List<DsaProblem> problems;
-  final int? selectedStepNumber; // null means All Steps
-  final DsaDifficulty? selectedDifficulty; // null means All
-  final DsaStatus? selectedStatus; // null means All
+  final int? selectedStepNumber;
+  final DsaDifficulty? selectedDifficulty;
+  final DsaStatus? selectedStatus;
+  final bool filterDueForRevisionOnly;
   final String searchQuery;
 
   const DsaState({
@@ -14,6 +16,7 @@ class DsaState {
     this.selectedStepNumber,
     this.selectedDifficulty,
     this.selectedStatus,
+    this.filterDueForRevisionOnly = false,
     this.searchQuery = '',
   });
 
@@ -25,6 +28,7 @@ class DsaState {
     bool clearDifficulty = false,
     DsaStatus? selectedStatus,
     bool clearStatus = false,
+    bool? filterDueForRevisionOnly,
     String? searchQuery,
   }) {
     return DsaState(
@@ -36,36 +40,11 @@ class DsaState {
           : (selectedDifficulty ?? this.selectedDifficulty),
       selectedStatus:
           clearStatus ? null : (selectedStatus ?? this.selectedStatus),
+      filterDueForRevisionOnly:
+          filterDueForRevisionOnly ?? this.filterDueForRevisionOnly,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
-
-  int get totalCount => problems.length;
-  int get solvedCount =>
-      problems.where((p) => p.status == DsaStatus.solved).length;
-  double get overallProgress =>
-      totalCount == 0 ? 0.0 : (solvedCount / totalCount) * 100.0;
-
-  int get easyTotal =>
-      problems.where((p) => p.difficulty == DsaDifficulty.easy).length;
-  int get easySolved => problems
-      .where((p) =>
-          p.difficulty == DsaDifficulty.easy && p.status == DsaStatus.solved)
-      .length;
-
-  int get mediumTotal =>
-      problems.where((p) => p.difficulty == DsaDifficulty.medium).length;
-  int get mediumSolved => problems
-      .where((p) =>
-          p.difficulty == DsaDifficulty.medium && p.status == DsaStatus.solved)
-      .length;
-
-  int get hardTotal =>
-      problems.where((p) => p.difficulty == DsaDifficulty.hard).length;
-  int get hardSolved => problems
-      .where((p) =>
-          p.difficulty == DsaDifficulty.hard && p.status == DsaStatus.solved)
-      .length;
 
   List<DsaProblem> get filteredProblems {
     return problems.where((p) {
@@ -78,57 +57,93 @@ class DsaState {
       if (selectedStatus != null && p.status != selectedStatus) {
         return false;
       }
+      if (filterDueForRevisionOnly && !p.isDueForRevision) {
+        return false;
+      }
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
         final matchesTitle = p.title.toLowerCase().contains(query);
         final matchesPattern = p.pattern.toLowerCase().contains(query);
         final matchesSubTopic = p.subTopic.toLowerCase().contains(query);
-        if (!matchesTitle && !matchesPattern && !matchesSubTopic) return false;
+        final matchesStep = p.stepTitle.toLowerCase().contains(query);
+        if (!matchesTitle && !matchesPattern && !matchesSubTopic && !matchesStep) {
+          return false;
+        }
       }
       return true;
     }).toList();
   }
 
+  int get totalCount => problems.length;
+  int get solvedCount =>
+      problems.where((p) => p.status == DsaStatus.solved).length;
+  int get revisionDueCount =>
+      problems.where((p) => p.isDueForRevision).length;
+
   List<DsaStepSummary> get stepSummaries {
     final Map<int, List<DsaProblem>> grouped = {};
-    for (final p in problems) {
+    for (var p in problems) {
       grouped.putIfAbsent(p.stepNumber, () => []).add(p);
     }
 
-    final List<DsaStepSummary> summaries = [];
-    final titles = StriverA2ZData.getStepTitles();
-
-    for (int step = 1; step <= 18; step++) {
-      final list = grouped[step] ?? [];
-      final solved = list.where((p) => p.status == DsaStatus.solved).length;
-      final title = step < titles.length ? titles[step] : 'Step $step';
-      summaries.add(DsaStepSummary(
-        stepNumber: step,
+    return grouped.entries.map((entry) {
+      final stepProblems = entry.value;
+      final stepNum = entry.key;
+      final title = stepProblems.first.stepTitle;
+      final solved =
+          stepProblems.where((p) => p.status == DsaStatus.solved).length;
+      return DsaStepSummary(
+        stepNumber: stepNum,
         title: title,
-        totalProblems: list.length,
+        totalProblems: stepProblems.length,
         solvedProblems: solved,
-      ));
-    }
-    return summaries;
+      );
+    }).toList()
+      ..sort((a, b) => a.stepNumber.compareTo(b.stepNumber));
   }
 }
 
 class DsaNotifier extends StateNotifier<DsaState> {
-  DsaNotifier()
-      : super(DsaState(problems: StriverA2ZData.getInitialProblems()));
+  final Ref ref;
 
-  void toggleStatus(String id) {
+  DsaNotifier(this.ref)
+      : super(DsaState(problems: StriverA2ZData.problems));
+
+  void toggleProblemStatus(String problemId) {
     state = state.copyWith(
       problems: state.problems.map((p) {
-        if (p.id == id) {
+        if (p.id == problemId) {
           final nextStatus = p.status == DsaStatus.solved
               ? DsaStatus.todo
-              : p.status == DsaStatus.todo
-                  ? DsaStatus.inProgress
-                  : DsaStatus.solved;
+              : DsaStatus.solved;
+
+          DateTime? nextRev;
+          int reviewCount = p.reviewCount;
+          DateTime? lastSolved;
+
+          if (nextStatus == DsaStatus.solved) {
+            lastSolved = DateTime.now();
+            reviewCount += 1;
+            // SM-2 Spaced Repetition interval calculation
+            final days = reviewCount == 1
+                ? 1
+                : reviewCount == 2
+                    ? 3
+                    : reviewCount == 3
+                        ? 7
+                        : reviewCount == 4
+                            ? 21
+                            : 45;
+            nextRev = lastSolved.add(Duration(days: days));
+            // Trigger cohort sync
+            ref.read(peerCohortProvider.notifier).incrementMyProblemsSolved();
+          }
+
           return p.copyWith(
             status: nextStatus,
-            completedAt: nextStatus == DsaStatus.solved ? DateTime.now() : null,
+            lastSolvedAt: lastSolved,
+            nextRevisionDate: nextRev,
+            reviewCount: reviewCount,
           );
         }
         return p;
@@ -160,20 +175,17 @@ class DsaNotifier extends StateNotifier<DsaState> {
     }
   }
 
-  void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
+  void toggleRevisionOnlyFilter() {
+    state = state.copyWith(
+      filterDueForRevisionOnly: !state.filterDueForRevisionOnly,
+    );
   }
 
-  void updateNotes(String id, String notes) {
-    state = state.copyWith(
-      problems: state.problems.map((p) {
-        if (p.id == id) return p.copyWith(notes: notes);
-        return p;
-      }).toList(),
-    );
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
   }
 }
 
 final dsaProvider = StateNotifierProvider<DsaNotifier, DsaState>((ref) {
-  return DsaNotifier();
+  return DsaNotifier(ref);
 });

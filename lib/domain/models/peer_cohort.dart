@@ -11,6 +11,7 @@ class PeerMember {
   final int? focusRemainingSeconds;
   final int problemsSolvedToday;
   final int totalProblemsSolved;
+  final double deepWorkHoursToday;
   final int totalFocusMinutesWeek;
   final int streakDays;
   final String currentDsaTopic;
@@ -26,6 +27,7 @@ class PeerMember {
     this.focusRemainingSeconds,
     this.problemsSolvedToday = 0,
     this.totalProblemsSolved = 0,
+    this.deepWorkHoursToday = 3.5,
     this.totalFocusMinutesWeek = 0,
     this.streakDays = 1,
     required this.currentDsaTopic,
@@ -42,6 +44,7 @@ class PeerMember {
     int? focusRemainingSeconds,
     int? problemsSolvedToday,
     int? totalProblemsSolved,
+    double? deepWorkHoursToday,
     int? totalFocusMinutesWeek,
     int? streakDays,
     String? currentDsaTopic,
@@ -57,6 +60,7 @@ class PeerMember {
       focusRemainingSeconds: focusRemainingSeconds ?? this.focusRemainingSeconds,
       problemsSolvedToday: problemsSolvedToday ?? this.problemsSolvedToday,
       totalProblemsSolved: totalProblemsSolved ?? this.totalProblemsSolved,
+      deepWorkHoursToday: deepWorkHoursToday ?? this.deepWorkHoursToday,
       totalFocusMinutesWeek: totalFocusMinutesWeek ?? this.totalFocusMinutesWeek,
       streakDays: streakDays ?? this.streakDays,
       currentDsaTopic: currentDsaTopic ?? this.currentDsaTopic,

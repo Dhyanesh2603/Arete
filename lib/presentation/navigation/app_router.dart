@@ -6,6 +6,7 @@ import '../views/coach/ai_coach_view.dart';
 import '../views/cohort/cohort_war_room_view.dart';
 import '../views/dashboard/mission_control_view.dart';
 import '../views/dsa/dsa_roadmap_view.dart';
+import '../views/dsa/mock_interview_view.dart';
 import '../views/focus/fullscreen_focus_view.dart';
 import '../views/goals/goals_view.dart';
 import '../views/habits/habits_view.dart';
@@ -25,6 +26,14 @@ final appRouter = GoRouter(
       pageBuilder: (context, state) => const MaterialPage(
         fullscreenDialog: true,
         child: FullscreenFocusView(),
+      ),
+    ),
+    // Fullscreen Overlay for 45-Minute Timed Mock Interview
+    GoRoute(
+      path: '/mock-interview',
+      pageBuilder: (context, state) => const MaterialPage(
+        fullscreenDialog: true,
+        child: MockInterviewView(),
       ),
     ),
     // Main Shell Navigation with persistent Sidebar

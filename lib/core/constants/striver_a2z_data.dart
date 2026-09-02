@@ -1,6 +1,8 @@
 import '../../domain/models/dsa_problem.dart';
 
 class StriverA2ZData {
+  static List<DsaProblem> get problems => getInitialProblems();
+
   static List<DsaProblem> getInitialProblems() {
     return [
       // Step 1: Learn the Basics
