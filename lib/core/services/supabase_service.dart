@@ -24,12 +24,19 @@ class SupabaseService {
   );
 
   static Future<void> initialize({String? url, String? anonKey}) async {
-    final targetUrl = url ?? supabaseUrl;
+    final rawUrl = url ?? supabaseUrl;
+    final targetUrl = rawUrl.replaceAll('/rest/v1', '').replaceAll(RegExp(r'/+$'), '');
     final targetKey = anonKey ?? supabaseAnonKey;
 
     if (targetUrl.isNotEmpty && targetKey.isNotEmpty && !targetUrl.contains('xyzcompany')) {
       try {
-        _client = SupabaseClient(targetUrl, targetKey);
+        _client = SupabaseClient(
+          targetUrl,
+          targetKey,
+          authOptions: const AuthClientOptions(
+            authFlowType: AuthFlowType.implicit,
+          ),
+        );
         _isSupabaseConfigured = true;
       } catch (e) {
         _isSupabaseConfigured = false;
@@ -160,64 +167,67 @@ class SupabaseService {
   }
 
   static Future<void> signInWithGoogle() async {
-    if (_isSupabaseConfigured && _client != null) {
-      try {
-        final currentUri = getBrowserUri();
-        final redirectUrl = '${currentUri.scheme}://${currentUri.host}${currentUri.hasPort ? ':${currentUri.port}' : ''}/';
-        final oAuthResponse = await _client!.auth.getOAuthSignInUrl(
-          provider: OAuthProvider.google,
-          redirectTo: redirectUrl,
-        );
-        openUrlInBrowser(oAuthResponse.url);
-      } on AuthException catch (e) {
-        throw e.message;
-      } catch (e) {
-        throw 'Google login failed: $e';
-      }
-    } else {
-      final profile = UserProfile(
-        id: 'usr-google-${DateTime.now().millisecondsSinceEpoch}',
-        name: 'Google User',
-        email: 'user@gmail.com',
-        targetRole: 'Software Engineer & DSA Aspirant',
-        avatarColor: const Color(0xFF38BDF8),
-        streakDays: 0,
-        totalProblemsSolved: 0,
-        totalFocusHours: 0.0,
-        createdAt: DateTime.now(),
-      );
-      await saveUserProfile(profile);
-      await _setCurrentSessionUserId(profile.id);
+    final currentUri = getBrowserUri();
+    final redirectUrl = '${currentUri.scheme}://${currentUri.host}${currentUri.hasPort ? ':${currentUri.port}' : ''}/';
+    final targetBase = supabaseUrl.replaceAll('/rest/v1', '').replaceAll(RegExp(r'/+$'), '');
+
+    try {
+      final googleOAuthUrl = '$targetBase/auth/v1/authorize?provider=google&redirect_to=${Uri.encodeComponent(redirectUrl)}&prompt=select_account';
+      openUrlInBrowser(googleOAuthUrl);
+    } on AuthException catch (e) {
+      throw e.message;
+    } catch (e) {
+      throw 'Google login failed: $e';
     }
   }
 
   static Future<UserProfile?> checkOAuthRedirectSession() async {
     final uri = getBrowserUri();
-    if (uri.fragment.contains('access_token') || uri.queryParameters.containsKey('access_token')) {
+    final hash = uri.fragment;
+    Map<String, String> params = {};
+
+    if (hash.isNotEmpty) {
+      final clean = hash.contains('?') ? hash.split('?').last : hash;
+      final stripped = clean.startsWith('/') ? clean.substring(1) : clean;
+      params = Uri.splitQueryString(stripped);
+    }
+    if (params.isEmpty) {
+      params = uri.queryParameters;
+    }
+
+    if (params.containsKey('error_description') || params.containsKey('error')) {
+      final desc = params['error_description'] ?? params['error'];
+      throw 'Google Sign In Error: $desc';
+    }
+
+    final accessToken = params['access_token'];
+    if (accessToken != null && accessToken.isNotEmpty) {
       if (_isSupabaseConfigured && _client != null) {
         try {
-          final res = await _client!.auth.getSessionFromUrl(uri);
-          final user = res.session.user;
-          var profile = await fetchUserProfile(user.id);
-          if (profile == null) {
-            final metaName = user.userMetadata?['full_name'] ??
-                user.userMetadata?['name'] ??
-                (user.email != null ? user.email!.split('@').first : 'Google User');
-            profile = UserProfile(
-              id: user.id,
-              name: metaName.toString(),
-              email: user.email ?? 'google@arete.app',
-              targetRole: 'Software Engineer & DSA Aspirant',
-              avatarColor: const Color(0xFF38BDF8),
-              streakDays: 0,
-              totalProblemsSolved: 0,
-              totalFocusHours: 0.0,
-              createdAt: DateTime.now(),
-            );
-            await saveUserProfile(profile);
+          final res = await _client!.auth.getUser(accessToken);
+          final user = res.user;
+          if (user != null) {
+            var profile = await fetchUserProfile(user.id);
+            if (profile == null) {
+              final metaName = user.userMetadata?['full_name'] ??
+                  user.userMetadata?['name'] ??
+                  (user.email != null ? user.email!.split('@').first : 'Google User');
+              profile = UserProfile(
+                id: user.id,
+                name: metaName.toString(),
+                email: user.email ?? 'google@arete.app',
+                targetRole: 'Software Engineer & DSA Aspirant',
+                avatarColor: const Color(0xFF38BDF8),
+                streakDays: 0,
+                totalProblemsSolved: 0,
+                totalFocusHours: 0.0,
+                createdAt: DateTime.now(),
+              );
+              await saveUserProfile(profile);
+            }
+            await _setCurrentSessionUserId(profile.id);
+            return profile;
           }
-          await _setCurrentSessionUserId(profile.id);
-          return profile;
         } catch (_) {}
       }
     }
