@@ -64,7 +64,7 @@ class LandingView extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'ARETE OS',
+            'ARETE',
             style: AppTypography.heading2.copyWith(
               letterSpacing: 1.5,
               fontSize: 18,
@@ -119,7 +119,7 @@ class LandingView extends ConsumerWidget {
               border: Border.all(color: AppColors.cyan.withValues(alpha: 0.3)),
             ),
             child: Text(
-              'THE OPERATING SYSTEM FOR AMBITIOUS MINDS',
+              'THE PLATFORM FOR AMBITIOUS MINDS',
               style: AppTypography.monoBadge.copyWith(
                 color: AppColors.cyan,
                 fontSize: 11,
@@ -319,7 +319,7 @@ class LandingView extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Join the operating system designed specifically for ambitious learners and engineers.',
+            'Join the platform designed specifically for ambitious learners and engineers.',
             textAlign: TextAlign.center,
             style: AppTypography.bodyLarge.copyWith(color: AppColors.textMuted),
           ),
@@ -335,7 +335,7 @@ class LandingView extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
-              'ENTER OPERATING SYSTEM',
+              'ENTER ARETE',
               style: AppTypography.monoBadge.copyWith(
                 color: const Color(0xFF0B0D13),
                 fontWeight: FontWeight.bold,
@@ -355,7 +355,7 @@ class LandingView extends ConsumerWidget {
       ),
       child: Center(
         child: Text(
-          'Arete OS — Personal Operating System. Built with Flutter Web.',
+          'Arete — Built with Flutter Web.',
           style: AppTypography.caption.copyWith(color: AppColors.textSubtle),
         ),
       ),

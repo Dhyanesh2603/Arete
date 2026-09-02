@@ -68,7 +68,7 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
     if (route.startsWith('/coach')) return 'AI Cognitive Coach';
     if (route.startsWith('/analytics')) return 'Life Telemetry & Velocity';
     if (route.startsWith('/settings')) return 'System Settings';
-    return 'Arete OS';
+    return 'Arete';
   }
 
   @override

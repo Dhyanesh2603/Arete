@@ -40,7 +40,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       user: UserProfile(
         id: 'usr-1',
         name: 'Dhyanesh',
-        email: 'dhyanesh@arete.os',
+        email: 'dhyanesh@arete.app',
         targetRole: 'Senior AI & Systems Architect',
         avatarColor: const Color(0xFF38BDF8),
         streakDays: 42,
@@ -122,7 +122,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       user: UserProfile(
         id: 'usr-guest',
         name: 'Dhyanesh (Guest)',
-        email: 'guest@arete.os',
+        email: 'guest@arete.app',
         targetRole: 'DSA & Systems Aspirant',
         avatarColor: const Color(0xFF38BDF8),
         streakDays: 42,

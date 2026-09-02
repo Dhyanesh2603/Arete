@@ -95,7 +95,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text('ARETE OS', style: AppTypography.heading2.copyWith(fontSize: 16)),
+                    Text('ARETE', style: AppTypography.heading2.copyWith(fontSize: 16)),
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
@@ -112,7 +112,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
                 const SizedBox(height: 6),
                 Text(
                   _isSignUp
-                      ? 'Initialize your personal operating system.'
+                      ? 'Initialize your personal workspace.'
                       : 'Sign in to resume your daily focus and DSA tracking.',
                   style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted, fontSize: 13),
                 ),

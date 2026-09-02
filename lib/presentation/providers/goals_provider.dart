@@ -47,9 +47,9 @@ class GoalsNotifier extends StateNotifier<GoalsState> {
       Goal(
         id: 'g-2',
         identityTitle: 'Sovereign Technical Founder',
-        title: 'Ship Arete Web Operating System to 1,000 Active Cohort Members',
+        title: 'Ship Arete Web to 1,000 Active Cohort Members',
         objectiveStatement:
-            'Build the fastest, zero-clutter personal operating system and launch on desktop web.',
+            'Build the fastest, zero-clutter personal platform and launch on desktop web.',
         targetDeadline: DateTime.now().add(const Duration(days: 90)),
         priority: GoalPriority.p1Strategic,
         status: GoalStatus.active,

@@ -264,7 +264,7 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
                           color: AppColors.textHigh,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Search anything across Arete OS (DSA, Tasks, Projects, Notes)...',
+                          hintText: 'Search anything across Arete (DSA, Tasks, Projects, Notes)...',
                           hintStyle: AppTypography.bodyLarge.copyWith(
                             color: AppColors.textMuted,
                           ),

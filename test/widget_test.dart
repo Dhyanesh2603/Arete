@@ -27,7 +27,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: AreteApp()));
     await tester.pumpAndSettle();
 
-    expect(find.text('ARETE OS'), findsWidgets);
+    expect(find.text('ARETE'), findsWidgets);
     expect(find.text('GET STARTED FREE'), findsOneWidget);
     expect(find.text('EXPLORE LIVE DEMO'), findsOneWidget);
   });

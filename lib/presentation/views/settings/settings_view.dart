@@ -32,7 +32,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
     final exportBundle = {
       'exportedAt': DateTime.now().toIso8601String(),
-      'systemVersion': 'Arete OS 1.0',
+      'systemVersion': 'Arete 1.0',
       'chronotype': _chronotype.name,
       'goals': goals.goals.map((g) => {'id': g.id, 'title': g.title, 'progress': g.weightedProgress}).toList(),
       'projectsCount': projects.length,

@@ -107,7 +107,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
       const Task(
         id: 'tk-6',
         title: 'Log Weekly Retrospective in Arete Knowledge Base',
-        milestoneTitle: 'Life OS Mastery',
+        milestoneTitle: 'Arete Mastery',
         projectTag: 'chores',
         priority: TaskPriority.low,
         estimatedMinutes: 15,

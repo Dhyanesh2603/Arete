@@ -59,7 +59,7 @@ class ProjectsNotifier extends StateNotifier<List<Project>> {
       Project(
         id: 'proj-2',
         title: 'Distributed Key-Value Store with Raft Consensus',
-        goalTitle: 'Ship Arete Web Operating System',
+        goalTitle: 'Ship Arete Web App',
         architectureMarkdown: '''
 # Raft Distributed Consensus Engine
 - Leader election state machine with randomized heartbeat timers.

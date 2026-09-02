@@ -78,14 +78,14 @@ class AppSidebar extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ARETE OS',
+                          'ARETE',
                           style: AppTypography.heading2.copyWith(
                             fontSize: 15,
                             letterSpacing: 1.2,
                           ),
                         ),
                         Text(
-                          'Personal OS',
+                          'Productivity Platform',
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textMuted,
                             fontSize: 10,
