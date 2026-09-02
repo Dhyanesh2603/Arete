@@ -6,17 +6,28 @@ import '../../../core/theme/app_typography.dart';
 import '../../providers/auth_provider.dart';
 
 class AuthView extends ConsumerStatefulWidget {
-  const AuthView({super.key});
+  final bool initialIsSignUp;
+
+  const AuthView({
+    super.key,
+    this.initialIsSignUp = false,
+  });
 
   @override
   ConsumerState<AuthView> createState() => _AuthViewState();
 }
 
 class _AuthViewState extends ConsumerState<AuthView> {
-  bool _isSignUp = false;
+  late bool _isSignUp;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _isSignUp = widget.initialIsSignUp;
+  }
 
   @override
   void dispose() {
@@ -43,7 +54,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
       );
     }
 
-    if (success && mounted) {
+    if (success && mounted && context.mounted) {
       context.go('/dashboard');
     }
   }
@@ -293,27 +304,6 @@ class _AuthViewState extends ConsumerState<AuthView> {
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Instant Guest Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      ref.read(authProvider.notifier).guestLogin();
-                      context.go('/dashboard');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.borderSubtle),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: Text(
-                      'EXPLORE AS GUEST (1-CLICK)',
-                      style: AppTypography.monoBadge.copyWith(color: AppColors.textMedium),
                     ),
                   ),
                 ),

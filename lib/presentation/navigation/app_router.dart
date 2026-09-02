@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
 import '../views/analytics/analytics_view.dart';
 import '../views/auth/auth_view.dart';
 import '../views/calendar/calendar_view.dart';
@@ -19,9 +21,47 @@ import '../views/settings/settings_view.dart';
 import '../views/shell_scaffold.dart';
 import '../views/tasks/tasks_view.dart';
 
-final appRouter = GoRouter(
-  initialLocation: '/',
-  routes: [
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    _ref.listen<AuthState>(
+      authProvider,
+      (previous, next) => notifyListeners(),
+    );
+  }
+
+  String? redirect(BuildContext context, GoRouterState state) {
+    final loc = state.matchedLocation;
+    final isAuthRoute = loc == '/auth';
+    final isLandingRoute = loc == '/';
+    final isAuthenticated = _ref.read(authProvider).isAuthenticated;
+
+    // Strict Auth Protection:
+    // If not authenticated, the user can ONLY view the landing page or the auth page.
+    // Any direct attempt to navigate to any other page redirects directly to /auth.
+    if (!isAuthenticated) {
+      if (!isLandingRoute && !isAuthRoute) {
+        return '/auth';
+      }
+      return null;
+    }
+
+    // If authenticated and visiting landing or auth, redirect straight into Mission Control.
+    if (isLandingRoute || isAuthRoute) {
+      return '/dashboard';
+    }
+
+    return null;
+  }
+}
+
+final routerNotifierProvider = Provider<RouterNotifier>((ref) {
+  return RouterNotifier(ref);
+});
+
+List<RouteBase> _buildRoutes() {
+  return [
     // Landing Page (Public)
     GoRoute(
       path: '/',
@@ -29,14 +69,18 @@ final appRouter = GoRouter(
         child: LandingView(),
       ),
     ),
-    // Auth Page (Login / Sign Up / Guest Access)
+    // Auth Page (Login / Sign Up)
     GoRoute(
       path: '/auth',
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: AuthView(),
-      ),
+      pageBuilder: (context, state) {
+        final mode = state.uri.queryParameters['mode'];
+        final isSignUp = mode == 'signup';
+        return NoTransitionPage(
+          child: AuthView(initialIsSignUp: isSignUp),
+        );
+      },
     ),
-    // Fullscreen Overlay for Distraction-Free Focus Mode
+    // Fullscreen Overlay for Distraction-Free Focus Mode (Protected)
     GoRoute(
       path: '/focus',
       pageBuilder: (context, state) => const MaterialPage(
@@ -44,7 +88,7 @@ final appRouter = GoRouter(
         child: FullscreenFocusView(),
       ),
     ),
-    // Fullscreen Overlay for 45-Minute Timed Mock Interview
+    // Fullscreen Overlay for 45-Minute Timed Mock Interview (Protected)
     GoRoute(
       path: '/mock-interview',
       pageBuilder: (context, state) => const MaterialPage(
@@ -52,7 +96,7 @@ final appRouter = GoRouter(
         child: MockInterviewView(),
       ),
     ),
-    // Main Shell Navigation with slideable Drawer Sidebar
+    // Main Shell Navigation with slideable Drawer Sidebar (Protected)
     ShellRoute(
       builder: (context, state, child) {
         return ShellScaffold(
@@ -141,5 +185,22 @@ final appRouter = GoRouter(
         ),
       ],
     ),
-  ],
+  ];
+}
+
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final notifier = ref.watch(routerNotifierProvider);
+
+  return GoRouter(
+    initialLocation: '/',
+    refreshListenable: notifier,
+    redirect: notifier.redirect,
+    routes: _buildRoutes(),
+  );
+});
+
+// Fallback router for standalone testing
+final appRouter = GoRouter(
+  initialLocation: '/',
+  routes: _buildRoutes(),
 );

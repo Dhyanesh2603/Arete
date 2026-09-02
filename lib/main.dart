@@ -12,16 +12,18 @@ Future<void> main() async {
   runApp(const ProviderScope(child: AreteApp()));
 }
 
-class AreteApp extends StatelessWidget {
+class AreteApp extends ConsumerWidget {
   const AreteApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
+
     return MaterialApp.router(
       title: 'Arete',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

@@ -35,7 +35,8 @@ void main() {
 
     expect(find.text('ARETE'), findsWidgets);
     expect(find.text('GET STARTED FREE'), findsOneWidget);
-    expect(find.text('EXPLORE LIVE DEMO'), findsOneWidget);
+    expect(find.text('SIGN IN'), findsWidgets);
+    expect(find.text('Sign Up'), findsOneWidget);
   });
 
   test('Auth Provider signs up new user with clean initial state', () async {

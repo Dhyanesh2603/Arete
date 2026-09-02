@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../providers/auth_provider.dart';
 
 class LandingView extends ConsumerWidget {
   const LandingView({super.key});
@@ -16,16 +15,16 @@ class LandingView extends ConsumerWidget {
         child: Column(
           children: [
             // Top Navigation Bar
-            _buildNavBar(context, ref),
+            _buildNavBar(context),
 
             // Hero Section
-            _buildHeroSection(context, ref),
+            _buildHeroSection(context),
 
             // 4 Core Value Columns
             _buildFeaturesSection(context),
 
             // Bottom CTA Banner
-            _buildBottomBanner(context, ref),
+            _buildBottomBanner(context),
 
             // Simple Footer
             _buildFooter(),
@@ -35,7 +34,7 @@ class LandingView extends ConsumerWidget {
     );
   }
 
-  Widget _buildNavBar(BuildContext context, WidgetRef ref) {
+  Widget _buildNavBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
       decoration: const BoxDecoration(
@@ -82,17 +81,14 @@ class LandingView extends ConsumerWidget {
           ),
           const SizedBox(width: 16),
           ElevatedButton(
-            onPressed: () {
-              ref.read(authProvider.notifier).guestLogin();
-              context.go('/dashboard');
-            },
+            onPressed: () => context.go('/auth?mode=signup'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.cyan,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
-              'Launch App',
+              'Sign Up',
               style: AppTypography.monoBadge.copyWith(
                 color: const Color(0xFF0B0D13),
                 fontWeight: FontWeight.bold,
@@ -104,7 +100,7 @@ class LandingView extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeroSection(BuildContext context, WidgetRef ref) {
+  Widget _buildHeroSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
       constraints: const BoxConstraints(maxWidth: 1080),
@@ -152,12 +148,12 @@ class LandingView extends ConsumerWidget {
           ),
           const SizedBox(height: 36),
 
-          // Primary & Guest CTAs
+          // Primary & Sign In CTAs
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton.icon(
-                onPressed: () => context.go('/auth'),
+                onPressed: () => context.go('/auth?mode=signup'),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18, color: Color(0xFF0B0D13)),
                 label: Text(
                   'GET STARTED FREE',
@@ -175,13 +171,10 @@ class LandingView extends ConsumerWidget {
               ),
               const SizedBox(width: 16),
               OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(authProvider.notifier).guestLogin();
-                  context.go('/dashboard');
-                },
-                icon: const Icon(Icons.play_circle_outline_rounded, size: 18, color: AppColors.textHigh),
+                onPressed: () => context.go('/auth'),
+                icon: const Icon(Icons.login_rounded, size: 18, color: AppColors.textHigh),
                 label: Text(
-                  'EXPLORE LIVE DEMO',
+                  'SIGN IN',
                   style: AppTypography.monoBadge.copyWith(color: AppColors.textHigh),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -300,7 +293,7 @@ class LandingView extends ConsumerWidget {
     );
   }
 
-  Widget _buildBottomBanner(BuildContext context, WidgetRef ref) {
+  Widget _buildBottomBanner(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
       padding: const EdgeInsets.all(48),
@@ -325,17 +318,14 @@ class LandingView extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              ref.read(authProvider.notifier).guestLogin();
-              context.go('/dashboard');
-            },
+            onPressed: () => context.go('/auth?mode=signup'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.cyan,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
-              'ENTER ARETE',
+              'CREATE YOUR ACCOUNT',
               style: AppTypography.monoBadge.copyWith(
                 color: const Color(0xFF0B0D13),
                 fontWeight: FontWeight.bold,

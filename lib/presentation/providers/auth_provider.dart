@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/supabase_service.dart';
 import '../../domain/models/user_profile.dart';
@@ -145,24 +144,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       }
     } catch (_) {}
-  }
-
-  void guestLogin() {
-    state = AuthState(
-      user: UserProfile(
-        id: 'usr-guest',
-        name: 'Guest Explorer',
-        email: 'guest@arete.app',
-        targetRole: 'Software Engineer & DSA Aspirant',
-        avatarColor: const Color(0xFF38BDF8),
-        streakDays: 0,
-        totalProblemsSolved: 0,
-        totalFocusHours: 0.0,
-        createdAt: DateTime.now(),
-      ),
-      isAuthenticated: true,
-      isLoading: false,
-    );
   }
 
   Future<void> logout() async {
