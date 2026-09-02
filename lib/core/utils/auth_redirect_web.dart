@@ -2,8 +2,7 @@
 import 'dart:html' as html;
 
 void redirectToWebUrl(String url) {
-  // Open in a new tab so localhost:8080 never gets unloaded
-  html.window.open(url, '_blank');
+  html.window.location.assign(url);
 }
 
 Uri getCurrentUri() {
