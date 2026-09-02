@@ -72,10 +72,13 @@ class SupabaseService {
             createdAt: DateTime.now(),
           );
           await saveUserProfile(profile);
+          await _setCurrentSessionUserId(res.user!.id);
           return profile;
         }
+      } on AuthException catch (e) {
+        throw e.message;
       } catch (_) {
-        // Fallback to isolated local user database
+        // Network fallback
       }
     }
 
@@ -126,8 +129,10 @@ class SupabaseService {
           await _setCurrentSessionUserId(profile.id);
           return profile;
         }
+      } on AuthException catch (e) {
+        throw e.message;
       } catch (_) {
-        // Fallback to local partition
+        // Network fallback
       }
     }
 
