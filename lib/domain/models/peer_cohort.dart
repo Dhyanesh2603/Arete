@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class PeerMember {
   final String id;
   final String name;
+  final String email;
   final String handle;
   final Color avatarColor;
   final bool isOnline;
@@ -15,10 +16,12 @@ class PeerMember {
   final int totalFocusMinutesWeek;
   final int streakDays;
   final String currentDsaTopic;
+  final bool isInvited;
 
   const PeerMember({
     required this.id,
     required this.name,
+    this.email = '',
     required this.handle,
     required this.avatarColor,
     this.isOnline = true,
@@ -27,15 +30,17 @@ class PeerMember {
     this.focusRemainingSeconds,
     this.problemsSolvedToday = 0,
     this.totalProblemsSolved = 0,
-    this.deepWorkHoursToday = 3.5,
+    this.deepWorkHoursToday = 0.0,
     this.totalFocusMinutesWeek = 0,
-    this.streakDays = 1,
-    required this.currentDsaTopic,
+    this.streakDays = 0,
+    this.currentDsaTopic = 'General Practice',
+    this.isInvited = false,
   });
 
   PeerMember copyWith({
     String? id,
     String? name,
+    String? email,
     String? handle,
     Color? avatarColor,
     bool? isOnline,
@@ -48,22 +53,27 @@ class PeerMember {
     int? totalFocusMinutesWeek,
     int? streakDays,
     String? currentDsaTopic,
+    bool? isInvited,
   }) {
     return PeerMember(
       id: id ?? this.id,
       name: name ?? this.name,
+      email: email ?? this.email,
       handle: handle ?? this.handle,
       avatarColor: avatarColor ?? this.avatarColor,
       isOnline: isOnline ?? this.isOnline,
       isFocusingNow: isFocusingNow ?? this.isFocusingNow,
       currentFocusTask: currentFocusTask ?? this.currentFocusTask,
-      focusRemainingSeconds: focusRemainingSeconds ?? this.focusRemainingSeconds,
+      focusRemainingSeconds:
+          focusRemainingSeconds ?? this.focusRemainingSeconds,
       problemsSolvedToday: problemsSolvedToday ?? this.problemsSolvedToday,
       totalProblemsSolved: totalProblemsSolved ?? this.totalProblemsSolved,
       deepWorkHoursToday: deepWorkHoursToday ?? this.deepWorkHoursToday,
-      totalFocusMinutesWeek: totalFocusMinutesWeek ?? this.totalFocusMinutesWeek,
+      totalFocusMinutesWeek:
+          totalFocusMinutesWeek ?? this.totalFocusMinutesWeek,
       streakDays: streakDays ?? this.streakDays,
       currentDsaTopic: currentDsaTopic ?? this.currentDsaTopic,
+      isInvited: isInvited ?? this.isInvited,
     );
   }
 }
@@ -84,6 +94,25 @@ class PeerCohort {
     this.sprintTargetProblems = 50,
     required this.sprintDeadline,
   });
+
+  PeerCohort copyWith({
+    String? id,
+    String? name,
+    String? targetGoal,
+    List<PeerMember>? members,
+    int? sprintTargetProblems,
+    DateTime? sprintDeadline,
+  }) {
+    return PeerCohort(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      targetGoal: targetGoal ?? this.targetGoal,
+      members: members ?? this.members,
+      sprintTargetProblems:
+          sprintTargetProblems ?? this.sprintTargetProblems,
+      sprintDeadline: sprintDeadline ?? this.sprintDeadline,
+    );
+  }
 
   int get totalGroupProblemsToday =>
       members.fold(0, (sum, m) => sum + m.problemsSolvedToday);

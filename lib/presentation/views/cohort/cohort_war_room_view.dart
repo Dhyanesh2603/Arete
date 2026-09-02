@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/focus_session_provider.dart';
 import '../../providers/peer_cohort_provider.dart';
+import '../../widgets/invite_member_dialog.dart';
 
 class CohortWarRoomView extends ConsumerWidget {
   const CohortWarRoomView({super.key});
@@ -27,27 +28,43 @@ class CohortWarRoomView extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('DSA COHORT WAR-ROOM', style: AppTypography.heading1),
+                    Text('STUDY SQUAD', style: AppTypography.heading1),
                     const SizedBox(height: 4),
                     Text(
-                      'High-performance study squad holding each other accountable. Zero social clutter.',
+                      'Private peer study squad holding each other accountable. Zero social clutter.',
                       style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
                 const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => const InviteMemberDialog(),
+                    );
+                  },
+                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 16, color: AppColors.cyan),
+                  label: Text('INVITE PEER', style: AppTypography.monoBadge.copyWith(color: AppColors.cyan)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.cyan),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () {
                     ref.read(focusSessionProvider.notifier).startSession(
                           taskTitle: 'Synchronized Squad Focus Sprint',
-                          objective: '45-minute collective deep work block with Alex, Maya & squad',
+                          objective: '45-minute collective deep work block with study squad',
                           durationMinutes: 45,
                         );
                     context.go('/focus');
                   },
                   icon: const Icon(Icons.groups_rounded, size: 18, color: Color(0xFF0B0D13)),
                   label: Text(
-                    'JOIN SQUAD FOCUS SPRINT (45M)',
+                    'JOIN SPRINT (45M)',
                     style: AppTypography.monoBadge.copyWith(
                       color: const Color(0xFF0B0D13),
                       fontWeight: FontWeight.bold,

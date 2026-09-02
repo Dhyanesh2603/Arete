@@ -101,13 +101,17 @@ void main() {
     expect(updated.reviewCount, equals(1));
   });
 
-  test('Peer Cohort tracks members and active focus sessions', () {
+  test('Peer Cohort tracks study squad members and invites peers by email', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    final cohortState = container.read(peerCohortProvider);
-    expect(cohortState.cohort.members, isNotEmpty);
-    expect(cohortState.cohort.name, contains('Cohort Alpha'));
+    final initialCohort = container.read(peerCohortProvider);
+    expect(initialCohort.cohort.name, contains('Study Squad'));
+
+    await container.read(peerCohortProvider.notifier).invitePeerByEmail('partner@example.com', name: 'Partner');
+    final updated = container.read(peerCohortProvider);
+    expect(updated.cohort.members.any((m) => m.email == 'partner@example.com'), isTrue);
+    expect(updated.cohort.members.firstWhere((m) => m.email == 'partner@example.com').isInvited, isTrue);
   });
 
   test('Projects Notifier shifts tasks across Kanban columns', () {

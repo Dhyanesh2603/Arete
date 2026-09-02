@@ -97,7 +97,7 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
     ));
 
     items.add(_CommandItem(
-      title: 'Navigate to DSA Cohort War-Room',
+      title: 'Navigate to Study Squad',
       subtitle: 'Live study squad telemetry & peer accountability',
       category: 'NAVIGATION',
       shortcut: 'Cmd+3',

@@ -60,8 +60,8 @@ class CalendarNotifier extends StateNotifier<CalendarState> {
         ),
         CalendarBlock(
           id: 'cb-3',
-          title: 'Study Squad War-Room Sync',
-          subtitle: 'Review Step 13 with Alex & Maya',
+          title: 'Study Squad Peer Review',
+          subtitle: 'Review Step 13 with study partner',
           startTime: DateTime(now.year, now.month, now.day, 14, 30),
           endTime: DateTime(now.year, now.month, now.day, 15, 30),
           type: CalendarBlockType.studyCohort,

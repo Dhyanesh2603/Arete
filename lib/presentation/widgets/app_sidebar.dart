@@ -187,7 +187,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.groups_outlined,
                   activeIcon: Icons.groups_rounded,
                   title: 'Study Squad',
-                  subtitle: 'Live peer war-room',
+                  subtitle: 'Peer progress & accountability',
                   route: '/cohort',
                 ),
                 _buildNavItem(

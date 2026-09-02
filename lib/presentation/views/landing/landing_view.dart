@@ -220,7 +220,7 @@ class LandingView extends ConsumerWidget {
                 icon: Icons.groups_rounded,
                 color: AppColors.lavender,
                 bgColor: AppColors.lavenderBg,
-                title: 'Live Cohort War-Room',
+                title: 'Live Study Squad',
                 description:
                     'Study squad telemetry showing active peer focus sessions in real time, synchronized 45m sprints, and weekly velocity leaderboards.',
               ),

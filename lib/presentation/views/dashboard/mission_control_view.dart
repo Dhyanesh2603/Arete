@@ -7,11 +7,9 @@ import '../../../domain/models/task.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dsa_provider.dart';
 import '../../providers/focus_session_provider.dart';
-import '../../providers/habits_provider.dart';
 import '../../providers/peer_cohort_provider.dart';
 import '../../providers/tasks_provider.dart';
-import '../../widgets/concentric_rings_painter.dart';
-import '../../widgets/telemetry_metric_card.dart';
+import '../../widgets/invite_member_dialog.dart';
 
 class MissionControlView extends ConsumerWidget {
   const MissionControlView({super.key});
@@ -20,17 +18,16 @@ class MissionControlView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dsaState = ref.watch(dsaProvider);
     final tasksState = ref.watch(tasksProvider);
-    final habits = ref.watch(habitsProvider);
-    final cohortState = ref.watch(peerCohortProvider);
+    final squadState = ref.watch(peerCohortProvider);
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
-    final completedHabitsToday = habits.where((h) => h.isCompletedToday).length;
-    final highPriorityTasks = tasksState.tasks.where((t) => !t.isCompleted && t.priority == TaskPriority.high).toList();
+    final pendingTasks = tasksState.tasks.where((t) => !t.isCompleted).toList();
+    final highPriorityTasks = pendingTasks.where((t) => t.priority == TaskPriority.high).toList();
     final firstPendingTask = highPriorityTasks.isNotEmpty
         ? highPriorityTasks.first
-        : tasksState.tasks.where((t) => !t.isCompleted).isNotEmpty
-            ? tasksState.tasks.where((t) => !t.isCompleted).first
+        : pendingTasks.isNotEmpty
+            ? pendingTasks.first
             : null;
 
     return LayoutBuilder(
@@ -38,46 +35,45 @@ class MissionControlView extends ConsumerWidget {
         final isWide = constraints.maxWidth > 960;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Personalized Header Banner
-              _buildPersonalizedHeader(context, user, isWide, dsaState),
+              // 1. Sleek Minimalist Header (No circular symbols)
+              _buildCleanHeader(context, user, isWide, dsaState),
               const SizedBox(height: 20),
 
-              // 4 Glanceable Metric Cards
-              _buildTelemetryGrid(
-                  dsaState, habits, completedHabitsToday, cohortState, isWide, user),
-              const SizedBox(height: 20),
+              // 2. Focused Vital Cards (Only essential metrics)
+              _buildVitalCards(context, dsaState, pendingTasks, squadState, isWide),
+              const SizedBox(height: 24),
 
-              // Main Command Layout
+              // 3. Primary Next Action & Today's Priorities
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left Column: Hero Next Action & Timeline
+                    // Left Column: Primary Next Action & Today's Tasks
                     Expanded(
                       flex: 6,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildHeroNextActionCard(context, ref, firstPendingTask),
+                          _buildPrimaryActionCard(context, ref, firstPendingTask),
                           const SizedBox(height: 20),
-                          _buildTimelineFlowCard(context, tasksState),
+                          _buildPriorityTaskList(context, ref, pendingTasks),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    // Right Column: Cohort Live Friends & Striver Topic Radar
+                    const SizedBox(width: 24),
+                    // Right Column: Study Squad (with Invite by Email) & Topics
                     Expanded(
                       flex: 4,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildCohortLiveStatusCard(context, cohortState),
+                          _buildStudySquadCard(context, squadState),
                           const SizedBox(height: 20),
-                          _buildStriverTopicsRadarCard(context, dsaState),
+                          _buildDsaTopicGatesCard(context, dsaState),
                         ],
                       ),
                     ),
@@ -87,13 +83,13 @@ class MissionControlView extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeroNextActionCard(context, ref, firstPendingTask),
+                    _buildPrimaryActionCard(context, ref, firstPendingTask),
                     const SizedBox(height: 20),
-                    _buildCohortLiveStatusCard(context, cohortState),
+                    _buildPriorityTaskList(context, ref, pendingTasks),
                     const SizedBox(height: 20),
-                    _buildTimelineFlowCard(context, tasksState),
+                    _buildStudySquadCard(context, squadState),
                     const SizedBox(height: 20),
-                    _buildStriverTopicsRadarCard(context, dsaState),
+                    _buildDsaTopicGatesCard(context, dsaState),
                   ],
                 ),
             ],
@@ -103,31 +99,20 @@ class MissionControlView extends ConsumerWidget {
     );
   }
 
-  Widget _buildPersonalizedHeader(
+  Widget _buildCleanHeader(
       BuildContext context, dynamic user, bool isWide, DsaState dsaState) {
     final userName = user?.name ?? 'Developer';
     final userRole = user?.targetRole ?? 'Software Engineer & DSA Aspirant';
 
-    final focusRatio = ((user?.totalFocusHours ?? 0.0) / 5.0).clamp(0.0, 1.0);
-    final dsaRatio = dsaState.totalCount == 0 ? 0.0 : (dsaState.solvedCount / dsaState.totalCount);
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
       decoration: BoxDecoration(
         color: AppColors.surfaceTier1,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: AppColors.borderSubtle),
       ),
       child: Row(
         children: [
-          // Concentric Vector Rings Mini HUD
-          ConcentricRingsWidget(
-            focusProgress: focusRatio,
-            habitProgress: 1.0,
-            velocityProgress: dsaRatio,
-            size: 40,
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,10 +123,11 @@ class MissionControlView extends ConsumerWidget {
                       'Welcome back, $userName',
                       style: AppTypography.heading2.copyWith(
                         color: AppColors.textHigh,
-                        fontSize: 16,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
@@ -155,9 +141,9 @@ class MissionControlView extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
-                  'Goal: $userRole',
+                  userRole,
                   style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -166,19 +152,42 @@ class MissionControlView extends ConsumerWidget {
             ),
           ),
           if (isWide) ...[
-            const SizedBox(width: 12),
-            _buildPill(
-              label: 'STREAK',
-              value: '${user?.streakDays ?? 0} Days',
-              color: AppColors.amber,
-              bgColor: AppColors.amberBg,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceTier2,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, size: 14, color: AppColors.amber),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${user?.streakDays ?? 0} Day Streak',
+                    style: AppTypography.monoBadge.copyWith(color: AppColors.amber, fontSize: 11),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            _buildPill(
-              label: 'SOLVED',
-              value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
-              color: AppColors.mint,
-              bgColor: AppColors.mintBg,
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceTier2,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.code_rounded, size: 14, color: AppColors.cyan),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${dsaState.solvedCount} / ${dsaState.totalCount} Solved',
+                    style: AppTypography.monoBadge.copyWith(color: AppColors.cyan, fontSize: 11),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
@@ -186,84 +195,133 @@ class MissionControlView extends ConsumerWidget {
     );
   }
 
-  Widget _buildTelemetryGrid(dynamic dsaState, dynamic habits,
-      int completedHabitsToday, dynamic cohortState, bool isWide, dynamic user) {
+  Widget _buildVitalCards(BuildContext context, DsaState dsaState,
+      List<Task> pendingTasks, PeerCohortState squadState, bool isWide) {
+    final highCount = pendingTasks.where((t) => t.priority == TaskPriority.high).length;
+    final medCount = pendingTasks.where((t) => t.priority == TaskPriority.medium).length;
+    final lowCount = pendingTasks.where((t) => t.priority == TaskPriority.low).length;
+
     return Row(
       children: [
-        TelemetryMetricCard(
-          label: 'Striver A2Z DSA Sheet',
-          value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
-          subValue: dsaState.solvedCount == 0 ? 'Start Step 1' : '${dsaState.solvedCount} Solved',
-          accentColor: AppColors.cyan,
-          bgColor: AppColors.cyanBg,
-          icon: Icons.code_rounded,
+        // Card 1: Striver DSA Sheet Progress
+        Expanded(
+          child: InkWell(
+            onTap: () => context.go('/dsa'),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceTier1,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.code_rounded, size: 18, color: AppColors.cyan),
+                      const SizedBox(width: 8),
+                      Text('Striver A2Z Sheet', style: AppTypography.caption.copyWith(color: AppColors.textMedium)),
+                      const Spacer(),
+                      Text(
+                        '${dsaState.overallProgressPercentage.toStringAsFixed(1)}%',
+                        style: AppTypography.monoBadge.copyWith(color: AppColors.cyan, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${dsaState.solvedCount} / ${dsaState.totalCount}',
+                    style: AppTypography.heading1.copyWith(fontSize: 22),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: dsaState.totalCount == 0 ? 0 : dsaState.solvedCount / dsaState.totalCount,
+                      backgroundColor: AppColors.surfaceTier2,
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.cyan),
+                      minHeight: 4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        const SizedBox(width: 12),
-        TelemetryMetricCard(
-          label: 'Deep Work Focus Today',
-          value: '${user?.totalFocusHours ?? 0.0}h',
-          subValue: '/ 5.0h Target',
-          accentColor: AppColors.amber,
-          bgColor: AppColors.amberBg,
-          icon: Icons.timer_outlined,
-        ),
-        const SizedBox(width: 12),
-        TelemetryMetricCard(
-          label: 'Habit Consistency',
-          value: habits.isEmpty ? '0 Active' : '$completedHabitsToday/${habits.length}',
-          subValue: habits.isEmpty ? 'Create First Habit' : 'Completed Today',
-          accentColor: AppColors.mint,
-          bgColor: AppColors.mintBg,
-          icon: Icons.repeat_rounded,
-        ),
-        const SizedBox(width: 12),
-        TelemetryMetricCard(
-          label: 'Study Squad Alpha',
-          value: '${cohortState.cohort.totalGroupProblemsToday} Solved',
-          subValue: '${cohortState.cohort.activeFocusingMembersCount} Live Now',
-          accentColor: AppColors.lavender,
-          bgColor: AppColors.lavenderBg,
-          icon: Icons.groups_rounded,
+        const SizedBox(width: 14),
+
+        // Card 2: Active Task Queue
+        Expanded(
+          child: InkWell(
+            onTap: () => context.go('/tasks'),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceTier1,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.checklist_rounded, size: 18, color: AppColors.amber),
+                      const SizedBox(width: 8),
+                      Text('Priority Queue', style: AppTypography.caption.copyWith(color: AppColors.textMedium)),
+                      const Spacer(),
+                      Text('Tasks ->', style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${pendingTasks.length} Pending',
+                    style: AppTypography.heading1.copyWith(fontSize: 22),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildPriorityTag('High', highCount, AppColors.rose, AppColors.roseBg),
+                      const SizedBox(width: 6),
+                      _buildPriorityTag('Med', medCount, AppColors.amber, AppColors.amberBg),
+                      const SizedBox(width: 6),
+                      _buildPriorityTag('Low', lowCount, AppColors.mint, AppColors.mintBg),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPill({
-    required String label,
-    required String value,
-    required Color color,
-    required Color bgColor,
-  }) {
+  Widget _buildPriorityTag(String label, int count, Color color, Color bg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('$label: ',
-              style: AppTypography.caption
-                  .copyWith(fontSize: 10, color: AppColors.textMuted)),
-          Text(value,
-              style: AppTypography.monoBadge
-                  .copyWith(fontSize: 10, color: color)),
-        ],
+      child: Text(
+        '$label: $count',
+        style: AppTypography.monoBadge.copyWith(color: color, fontSize: 10),
       ),
     );
   }
 
-  Widget _buildHeroNextActionCard(
+  Widget _buildPrimaryActionCard(
       BuildContext context, WidgetRef ref, Task? heroTask) {
     if (heroTask == null) {
       return Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.surfaceTier1,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.borderSubtle),
         ),
         child: Column(
@@ -272,42 +330,38 @@ class MissionControlView extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.cyanBg,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text('NEXT ACTION',
+                  child: Text('PRIMARY ACTION',
                       style: AppTypography.monoBadge
-                          .copyWith(color: AppColors.cyan, fontSize: 10)),
+                          .copyWith(color: AppColors.cyan, fontSize: 9)),
                 ),
-                const SizedBox(width: 10),
-                Text('Ready for execution', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                const SizedBox(width: 8),
+                Text('Queue is clear', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              'No active tasks in your queue.',
-              style: AppTypography.heading1.copyWith(fontSize: 17, color: AppColors.textHigh),
+              'No high-priority task active right now.',
+              style: AppTypography.heading2.copyWith(fontSize: 16),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
-              'Add your first high-priority task in Tasks or start practicing from the Striver DSA Sheet.',
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+              'Add your next priority item or pick a problem from the Striver DSA Sheet.',
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted, fontSize: 13),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
                 ElevatedButton.icon(
                   onPressed: () => context.go('/tasks'),
-                  icon: const Icon(Icons.add_task_rounded, size: 16, color: Color(0xFF0B0D13)),
-                  label: Text(
-                    'ADD FIRST TASK',
-                    style: AppTypography.monoBadge.copyWith(
-                      color: const Color(0xFF0B0D13),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0B0D13)),
+                  label: Text('ADD FIRST TASK',
+                      style: AppTypography.monoBadge.copyWith(
+                          color: const Color(0xFF0B0D13), fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.cyan,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -315,15 +369,14 @@ class MissionControlView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                OutlinedButton.icon(
+                OutlinedButton(
                   onPressed: () => context.go('/dsa'),
-                  icon: const Icon(Icons.code_rounded, size: 16, color: AppColors.textMedium),
-                  label: Text('Open Striver Sheet', style: AppTypography.bodyMedium.copyWith(color: AppColors.textMedium)),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.borderSubtle),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
+                  child: Text('Browse DSA Sheet', style: AppTypography.bodyMedium.copyWith(fontSize: 13)),
                 ),
               ],
             ),
@@ -336,9 +389,11 @@ class MissionControlView extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surfaceTier1,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-            color: heroTask.priority.color.withValues(alpha: 0.4), width: 1.2),
+          color: heroTask.priority.color.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,29 +401,10 @@ class MissionControlView extends ConsumerWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: heroTask.priority.backgroundColor,
                   borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text('PRIMARY NEXT ACTION',
-                    style: AppTypography.monoBadge
-                        .copyWith(color: heroTask.priority.color, fontSize: 10)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  heroTask.milestoneTitle ?? (heroTask.projectTag != null ? '#${heroTask.projectTag}' : 'Task Queue'),
-                  style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: heroTask.priority.backgroundColor,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: heroTask.priority.color.withValues(alpha: 0.4)),
                 ),
                 child: Text(
                   '${heroTask.priority.label.toUpperCase()} PRIORITY',
@@ -376,22 +412,19 @@ class MissionControlView extends ConsumerWidget {
                       .copyWith(color: heroTask.priority.color, fontSize: 9),
                 ),
               ),
+              const Spacer(),
+              Text(
+                '${heroTask.estimatedMinutes}m estimate',
+                style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             heroTask.title,
-            style: AppTypography.heading1.copyWith(
-              color: AppColors.textHigh,
-              fontSize: 18,
-            ),
+            style: AppTypography.heading1.copyWith(fontSize: 17),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Estimated duration: ${heroTask.estimatedMinutes} minutes (${heroTask.estimatedPomodoros} Pomodoro session).',
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           Row(
             children: [
               ElevatedButton.icon(
@@ -404,44 +437,30 @@ class MissionControlView extends ConsumerWidget {
                   context.go('/focus');
                 },
                 icon: const Icon(Icons.play_arrow_rounded,
-                    size: 18, color: Color(0xFF0B0D13)),
+                    size: 16, color: Color(0xFF0B0D13)),
                 label: Text(
-                  'START FOCUS (Cmd + Enter)',
+                  'START FOCUS',
                   style: AppTypography.monoBadge.copyWith(
                     color: const Color(0xFF0B0D13),
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.cyan,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
               ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  context.go('/tasks');
-                },
-                icon: const Icon(Icons.checklist_rounded,
-                    size: 16, color: AppColors.textMedium),
-                label: Text(
-                  'View All Tasks',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textMedium),
-                ),
+              const SizedBox(width: 10),
+              OutlinedButton(
+                onPressed: () => context.go('/tasks'),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.borderSubtle),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
+                child: Text('View All Tasks', style: AppTypography.bodyMedium.copyWith(fontSize: 13)),
               ),
             ],
           ),
@@ -450,194 +469,228 @@ class MissionControlView extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimelineFlowCard(BuildContext context, TasksState tasksState) {
+  Widget _buildPriorityTaskList(
+      BuildContext context, WidgetRef ref, List<Task> pendingTasks) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surfaceTier1,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: AppColors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text('TODAY SCHEDULE', style: AppTypography.heading2),
+              Text('TODAY AGENDA', style: AppTypography.heading2.copyWith(fontSize: 14)),
               const Spacer(),
               InkWell(
-                onTap: () => context.go('/calendar'),
-                child: Text('Calendar ->', style: AppTypography.caption.copyWith(color: AppColors.cyan)),
+                onTap: () => context.go('/tasks'),
+                child: Text('Add Task +', style: AppTypography.caption.copyWith(color: AppColors.cyan)),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          if (tasksState.tasks.isEmpty)
+          const SizedBox(height: 12),
+          if (pendingTasks.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'No blocks scheduled yet today. Tasks you add with time estimates will appear in your timeline.',
-                style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                'No pending tasks. Your queue is clean.',
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted, fontSize: 13),
               ),
             )
           else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: tasksState.tasks.take(4).map((t) {
-                  return Container(
-                    width: 190,
-                    margin: const EdgeInsets.only(right: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: t.priority.backgroundColor,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: t.priority.color.withValues(alpha: 0.3),
+            ...pendingTasks.take(4).map((task) {
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceTier2,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        ref.read(tasksProvider.notifier).toggleTask(task.id);
+                      },
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: task.priority.color, width: 1.5),
+                        ),
+                        child: task.isCompleted
+                            ? Icon(Icons.check_rounded, size: 14, color: task.priority.color)
+                            : null,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.title,
-                          style: AppTypography.monoBadge.copyWith(
-                            fontSize: 11,
-                            color: t.priority.color,
-                            decoration: t.isCompleted ? TextDecoration.lineThrough : null,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontSize: 13,
+                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${t.estimatedMinutes}m · ${t.priority.label}',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textMuted,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: task.priority.backgroundColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        task.priority.label,
+                        style: AppTypography.monoBadge.copyWith(
+                          color: task.priority.color,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );
   }
 
-  Widget _buildCohortLiveStatusCard(
-      BuildContext context, PeerCohortState cohortState) {
+  Widget _buildStudySquadCard(
+      BuildContext context, PeerCohortState squadState) {
+    final members = squadState.cohort.members;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surfaceTier1,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: AppColors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text('STUDY SQUAD ALPHA', style: AppTypography.heading2),
+              Text('STUDY SQUAD', style: AppTypography.heading2.copyWith(fontSize: 14)),
               const Spacer(),
-              InkWell(
-                onTap: () => context.go('/cohort'),
-                child: Text(
-                  'War-Room ->',
-                  style:
-                      AppTypography.caption.copyWith(color: AppColors.cyan),
+              ElevatedButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => const InviteMemberDialog(),
+                  );
+                },
+                icon: const Icon(Icons.add_rounded, size: 14, color: Color(0xFF0B0D13)),
+                label: Text(
+                  'INVITE PEER',
+                  style: AppTypography.monoBadge.copyWith(
+                    color: const Color(0xFF0B0D13),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.cyan,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  elevation: 0,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...cohortState.cohort.members.take(3).map((m) {
-            return Container(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          if (members.length <= 1)
+            Container(
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: AppColors.surfaceTier2,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: m.isFocusingNow
-                      ? AppColors.cyan.withValues(alpha: 0.3)
-                      : AppColors.borderSubtle,
-                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderSubtle),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: m.avatarColor,
-                    child: Text(
-                      m.name[0],
-                      style: AppTypography.monoBadge.copyWith(
-                        color: const Color(0xFF0B0D13),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 6,
-                          children: [
-                            Text(m.name, style: AppTypography.bodyMedium),
-                            if (m.isFocusingNow)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cyanBg,
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                                child: Text('IN FOCUS',
-                                    style: AppTypography.monoBadge.copyWith(
-                                      color: AppColors.cyan,
-                                      fontSize: 8,
-                                    )),
-                              ),
-                          ],
-                        ),
-                        Text(
-                          m.currentFocusTask ?? m.currentDsaTopic,
-                          style: AppTypography.caption
-                              .copyWith(color: AppColors.textMuted),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
                   Text(
-                    '${m.problemsSolvedToday} Solved',
-                    style: AppTypography.monoBadge.copyWith(
-                      color: m.problemsSolvedToday > 0
-                          ? AppColors.mint
-                          : AppColors.textMuted,
-                      fontSize: 10,
-                    ),
+                    'No study partners invited yet.',
+                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Invite a friend with their email to compare daily problems and share study accountability.',
+                    style: AppTypography.caption.copyWith(color: AppColors.textMuted),
                   ),
                 ],
               ),
-            );
-          }),
+            )
+          else
+            ...members.map((m) {
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceTier2,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: m.avatarColor,
+                      child: Text(
+                        m.name.isNotEmpty ? m.name[0].toUpperCase() : 'P',
+                        style: AppTypography.monoBadge.copyWith(
+                          color: const Color(0xFF0B0D13),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.name, style: AppTypography.bodyMedium.copyWith(fontSize: 12)),
+                          Text(
+                            m.isInvited ? 'Invitation pending (${m.email})' : m.currentDsaTopic,
+                            style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 10),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (m.isInvited)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: AppColors.amberBg,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          'INVITED',
+                          style: AppTypography.monoBadge.copyWith(color: AppColors.amber, fontSize: 8),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );
   }
 
-  Widget _buildStriverTopicsRadarCard(
+  Widget _buildDsaTopicGatesCard(
       BuildContext context, DsaState dsaState) {
     final summaries = dsaState.stepSummaries.take(4).toList();
 
@@ -646,31 +699,26 @@ class MissionControlView extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceTier1,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: AppColors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text('STRIVER TOPIC GATES',
-                    style: AppTypography.heading2,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-              ),
+              Text('TOPIC GATES', style: AppTypography.heading2.copyWith(fontSize: 14)),
+              const Spacer(),
               InkWell(
                 onTap: () => context.go('/dsa'),
                 child: Text('All 18 Steps ->',
-                    style:
-                        AppTypography.caption.copyWith(color: AppColors.cyan)),
+                    style: AppTypography.caption.copyWith(color: AppColors.cyan)),
               ),
             ],
           ),
           const SizedBox(height: 12),
           ...summaries.map((s) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: 5),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -679,16 +727,14 @@ class MissionControlView extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           s.title,
-                          style: AppTypography.bodyMedium
-                              .copyWith(color: AppColors.textHigh),
+                          style: AppTypography.bodyMedium.copyWith(fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
                         '${s.solvedProblems}/${s.totalProblems}',
-                        style: AppTypography.monoBadge
-                            .copyWith(color: AppColors.textMuted),
+                        style: AppTypography.monoBadge.copyWith(fontSize: 10, color: AppColors.textMuted),
                       ),
                     ],
                   ),
@@ -696,16 +742,12 @@ class MissionControlView extends ConsumerWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(3),
                     child: LinearProgressIndicator(
-                      value: s.totalProblems == 0
-                          ? 0.0
-                          : s.solvedProblems / s.totalProblems,
+                      value: s.totalProblems == 0 ? 0.0 : s.solvedProblems / s.totalProblems,
                       backgroundColor: AppColors.surfaceTier2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        s.progressPercentage == 100.0
-                            ? AppColors.mint
-                            : AppColors.cyan,
+                        s.progressPercentage == 100.0 ? AppColors.mint : AppColors.cyan,
                       ),
-                      minHeight: 5,
+                      minHeight: 4,
                     ),
                   ),
                 ],

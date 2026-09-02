@@ -46,7 +46,7 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
         ),
         const TomorrowTaskPlan(
           timeSlot: '10:30 - 11:30',
-          title: 'DSA Squad War-Room Sync with Alex and Maya',
+          title: 'DSA Squad Peer Study Session',
           cognitiveTier: 'Medium 2x',
         ),
         const TomorrowTaskPlan(

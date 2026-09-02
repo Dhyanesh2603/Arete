@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/peer_cohort.dart';
+import 'auth_provider.dart';
 
 class PeerCohortState {
   final PeerCohort cohort;
@@ -23,119 +26,150 @@ class PeerCohortState {
 }
 
 class PeerCohortNotifier extends StateNotifier<PeerCohortState> {
-  PeerCohortNotifier() : super(_initialCohortState());
+  final Ref _ref;
+  String? _currentUserId;
 
-  static PeerCohortState _initialCohortState() {
-    final members = [
-      const PeerMember(
-        id: 'user-dhyan',
-        name: 'Dhyanesh',
-        handle: '@dhyanesh',
-        avatarColor: Color(0xFF38BDF8),
-        isOnline: true,
-        isFocusingNow: true,
-        currentFocusTask: 'Striver A2Z: Binary Trees Traversal & LCA',
-        focusRemainingSeconds: 1420,
-        problemsSolvedToday: 4,
-        totalProblemsSolved: 48,
-        totalFocusMinutesWeek: 640,
-        streakDays: 14,
-        currentDsaTopic: 'Step 13: Binary Trees',
-      ),
-      const PeerMember(
-        id: 'user-alex',
-        name: 'Alex Chen',
-        handle: '@alex_c',
-        avatarColor: Color(0xFF818CF8),
-        isOnline: true,
-        isFocusingNow: true,
-        currentFocusTask: 'LeetCode 15: 3Sum & 4Sum Partitioning',
-        focusRemainingSeconds: 840,
-        problemsSolvedToday: 3,
-        totalProblemsSolved: 52,
-        totalFocusMinutesWeek: 580,
-        streakDays: 19,
-        currentDsaTopic: 'Step 3: Arrays Hard',
-      ),
-      const PeerMember(
-        id: 'user-maya',
-        name: 'Maya Patel',
-        handle: '@maya_dev',
-        avatarColor: Color(0xFF34D399),
-        isOnline: true,
-        isFocusingNow: false,
-        problemsSolvedToday: 2,
-        totalProblemsSolved: 39,
-        totalFocusMinutesWeek: 420,
-        streakDays: 8,
-        currentDsaTopic: 'Step 4: Binary Search',
-      ),
-      const PeerMember(
-        id: 'user-ryan',
-        name: 'Ryan Miller',
-        handle: '@ryan_m',
-        avatarColor: Color(0xFFFBBF24),
-        isOnline: false,
-        isFocusingNow: false,
-        problemsSolvedToday: 1,
-        totalProblemsSolved: 31,
-        totalFocusMinutesWeek: 310,
-        streakDays: 5,
-        currentDsaTopic: 'Step 6: LinkedList',
-      ),
-      const PeerMember(
-        id: 'user-sarah',
-        name: 'Sarah Kim',
-        handle: '@sarah_k',
-        avatarColor: Color(0xFFFB7185),
-        isOnline: true,
-        isFocusingNow: false,
-        problemsSolvedToday: 3,
-        totalProblemsSolved: 44,
-        totalFocusMinutesWeek: 510,
-        streakDays: 12,
-        currentDsaTopic: 'Step 7: Recursion',
-      ),
-    ];
+  PeerCohortNotifier(this._ref) : super(_defaultCohortState()) {
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      final newUserId = next.user?.id;
+      if (newUserId != _currentUserId) {
+        _currentUserId = newUserId;
+        if (newUserId != null) {
+          _loadSquad(newUserId, next.user?.name ?? 'Developer');
+        } else {
+          state = _defaultCohortState();
+        }
+      }
+    });
 
+    final initialUser = _ref.read(authProvider).user;
+    if (initialUser != null) {
+      _currentUserId = initialUser.id;
+      _loadSquad(initialUser.id, initialUser.name);
+    }
+  }
+
+  static PeerCohortState _defaultCohortState() {
     return PeerCohortState(
-      currentUserId: 'user-dhyan',
+      currentUserId: 'current_user',
       cohort: PeerCohort(
-        id: 'cohort-dsa-alpha',
-        name: 'DSA Masters Cohort Alpha',
-        targetGoal: 'Master Striver A2Z Sheet & Land Top Tier Engineering Roles',
-        members: members,
+        id: 'squad-user',
+        name: 'My Study Squad',
+        targetGoal: 'FAANG & Top Product Software Engineer',
+        members: [],
         sprintTargetProblems: 50,
-        sprintDeadline: DateTime.now().add(const Duration(days: 4)),
+        sprintDeadline: DateTime.now().add(const Duration(days: 14)),
       ),
     );
   }
 
-  void incrementMyProblemsSolved() {
-    final updatedMembers = state.cohort.members.map((m) {
-      if (m.id == state.currentUserId) {
-        return m.copyWith(
-          problemsSolvedToday: m.problemsSolvedToday + 1,
-          totalProblemsSolved: m.totalProblemsSolved + 1,
-        );
-      }
-      return m;
-    }).toList();
+  Future<void> _loadSquad(String userId, String userName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('arete_user_${userId}_squad_members');
 
-    state = state.copyWith(
-      cohort: PeerCohort(
-        id: state.cohort.id,
-        name: state.cohort.name,
-        targetGoal: state.cohort.targetGoal,
-        members: updatedMembers,
-        sprintTargetProblems: state.cohort.sprintTargetProblems,
-        sprintDeadline: state.cohort.sprintDeadline,
-      ),
+    final userMember = PeerMember(
+      id: userId,
+      name: userName.isNotEmpty ? userName : 'You',
+      email: _ref.read(authProvider).user?.email ?? '',
+      handle: '@${userName.toLowerCase().replaceAll(' ', '_')}',
+      avatarColor: const Color(0xFF38BDF8),
+      isOnline: true,
+      isFocusingNow: false,
+      problemsSolvedToday: 0,
+      totalProblemsSolved: 0,
+      streakDays: _ref.read(authProvider).user?.streakDays ?? 0,
+      currentDsaTopic: 'General Practice',
     );
+
+    List<PeerMember> members = [userMember];
+
+    if (raw != null) {
+      try {
+        final list = jsonDecode(raw) as List<dynamic>;
+        final peers = list.map((item) {
+          final m = item as Map<String, dynamic>;
+          return PeerMember(
+            id: m['id'] as String,
+            name: m['name'] as String,
+            email: m['email'] as String? ?? '',
+            handle: m['handle'] as String? ?? '@peer',
+            avatarColor: Color(m['avatarColor'] as int? ?? 0xFF818CF8),
+            isOnline: m['isOnline'] as bool? ?? false,
+            isInvited: m['isInvited'] as bool? ?? true,
+            currentDsaTopic: m['currentDsaTopic'] as String? ?? 'Invited Peer',
+          );
+        }).toList();
+        members.addAll(peers);
+      } catch (_) {}
+    }
+
+    state = PeerCohortState(
+      currentUserId: userId,
+      cohort: state.cohort.copyWith(members: members),
+    );
+  }
+
+  Future<void> invitePeerByEmail(String email, {String? name}) async {
+    final trimmedEmail = email.trim();
+    if (trimmedEmail.isEmpty) return;
+
+    final displayName = (name != null && name.trim().isNotEmpty)
+        ? name.trim()
+        : trimmedEmail.split('@').first;
+
+    final newMember = PeerMember(
+      id: 'peer-${DateTime.now().millisecondsSinceEpoch}',
+      name: displayName,
+      email: trimmedEmail,
+      handle: '@${displayName.toLowerCase().replaceAll(' ', '_')}',
+      avatarColor: const Color(0xFF818CF8),
+      isOnline: false,
+      isInvited: true,
+      currentDsaTopic: 'Invitation Sent',
+    );
+
+    final updatedMembers = [...state.cohort.members, newMember];
+    state = state.copyWith(
+      cohort: state.cohort.copyWith(members: updatedMembers),
+    );
+
+    await _persistSquad(updatedMembers);
+  }
+
+  Future<void> removeMember(String memberId) async {
+    // Cannot remove oneself
+    if (memberId == _currentUserId) return;
+
+    final updatedMembers =
+        state.cohort.members.where((m) => m.id != memberId).toList();
+    state = state.copyWith(
+      cohort: state.cohort.copyWith(members: updatedMembers),
+    );
+
+    await _persistSquad(updatedMembers);
+  }
+
+  Future<void> _persistSquad(List<PeerMember> members) async {
+    if (_currentUserId == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    // Persist only invited peers
+    final peers = members.where((m) => m.id != _currentUserId).map((m) => {
+          'id': m.id,
+          'name': m.name,
+          'email': m.email,
+          'handle': m.handle,
+          'avatarColor': m.avatarColor.toARGB32(),
+          'isOnline': m.isOnline,
+          'isInvited': m.isInvited,
+          'currentDsaTopic': m.currentDsaTopic,
+        }).toList();
+
+    await prefs.setString(
+        'arete_user_${_currentUserId}_squad_members', jsonEncode(peers));
   }
 }
 
 final peerCohortProvider =
     StateNotifierProvider<PeerCohortNotifier, PeerCohortState>((ref) {
-  return PeerCohortNotifier();
+  return PeerCohortNotifier(ref);
 });
