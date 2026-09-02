@@ -483,7 +483,7 @@ class MissionControlView extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('TODAY AGENDA', style: AppTypography.heading2.copyWith(fontSize: 14)),
+              Text('PRIORITY TASKS', style: AppTypography.heading2.copyWith(fontSize: 14)),
               const Spacer(),
               InkWell(
                 onTap: () => context.go('/tasks'),

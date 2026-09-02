@@ -138,8 +138,8 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
     ));
 
     items.add(_CommandItem(
-      title: 'Navigate to Time-Blocking Calendar',
-      subtitle: 'Daily agenda & deep work block reservations',
+      title: 'Navigate to Calendar',
+      subtitle: 'Interactive monthly schedule & deep work blocks',
       category: 'NAVIGATION',
       onSelect: () {
         ref.read(commandPaletteProvider.notifier).close();

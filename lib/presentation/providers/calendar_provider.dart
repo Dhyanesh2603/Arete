@@ -20,7 +20,7 @@ class CalendarState {
     );
   }
 
-  List<CalendarBlock> get todayBlocks {
+  List<CalendarBlock> get selectedDateBlocks {
     return blocks.where((b) {
       return b.startTime.year == selectedDate.year &&
           b.startTime.month == selectedDate.month &&
@@ -28,6 +28,8 @@ class CalendarState {
     }).toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
   }
+
+  List<CalendarBlock> get todayBlocks => selectedDateBlocks;
 }
 
 class CalendarNotifier extends StateNotifier<CalendarState> {
@@ -67,30 +69,36 @@ class CalendarNotifier extends StateNotifier<CalendarState> {
           type: CalendarBlockType.studyCohort,
           isCompleted: false,
         ),
-        CalendarBlock(
-          id: 'cb-4',
-          title: 'GPU Kernel Lab: FlashAttention',
-          subtitle: 'Triton SRAM memory layout profiling',
-          startTime: DateTime(now.year, now.month, now.day, 16, 0),
-          endTime: DateTime(now.year, now.month, now.day, 17, 30),
-          type: CalendarBlockType.deepWork,
-          isCompleted: false,
-        ),
-        CalendarBlock(
-          id: 'cb-5',
-          title: 'Physical Training & Cardio',
-          subtitle: '45m Zone-2 running session',
-          startTime: DateTime(now.year, now.month, now.day, 18, 0),
-          endTime: DateTime(now.year, now.month, now.day, 19, 0),
-          type: CalendarBlockType.recovery,
-          isCompleted: false,
-        ),
       ],
     );
   }
 
   void setSelectedDate(DateTime date) {
     state = state.copyWith(selectedDate: date);
+  }
+
+  void addBlock({
+    required String title,
+    required String subtitle,
+    required DateTime startTime,
+    required DateTime endTime,
+    required CalendarBlockType type,
+  }) {
+    final block = CalendarBlock(
+      id: 'cb-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      subtitle: subtitle,
+      startTime: startTime,
+      endTime: endTime,
+      type: type,
+    );
+    state = state.copyWith(blocks: [...state.blocks, block]);
+  }
+
+  void deleteBlock(String id) {
+    state = state.copyWith(
+      blocks: state.blocks.where((b) => b.id != id).toList(),
+    );
   }
 
   void toggleBlockCompleted(String id) {

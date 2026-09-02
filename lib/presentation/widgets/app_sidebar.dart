@@ -210,8 +210,8 @@ class AppSidebar extends ConsumerWidget {
                   context,
                   icon: Icons.calendar_month_outlined,
                   activeIcon: Icons.calendar_month_rounded,
-                  title: 'Calendar & Agenda',
-                  subtitle: 'Daily time-blocking',
+                  title: 'Calendar',
+                  subtitle: 'Monthly schedule & blocks',
                   route: '/calendar',
                 ),
                 _buildNavItem(

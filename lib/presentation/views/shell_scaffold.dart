@@ -61,7 +61,7 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
     if (route.startsWith('/cohort')) return 'Study Squad';
     if (route.startsWith('/tasks')) return 'Unified Task Matrix';
     if (route.startsWith('/projects')) return 'Projects & Kanban';
-    if (route.startsWith('/calendar')) return 'Time-Blocking & Daily Agenda';
+    if (route.startsWith('/calendar')) return 'Calendar';
     if (route.startsWith('/habits')) return 'Habit Consistency Vectors';
     if (route.startsWith('/focus')) return 'Deep Work Focus Session';
     if (route.startsWith('/goals')) return 'Strategic Goals & Milestones';
