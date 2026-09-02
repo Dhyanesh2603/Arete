@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/supabase_service.dart';
 import '../../domain/models/user_profile.dart';
 
 class AuthState {
@@ -33,109 +34,110 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(_defaultGuestState());
-
-  static AuthState _defaultGuestState() {
-    return AuthState(
-      user: UserProfile(
-        id: 'usr-1',
-        name: 'Dhyanesh',
-        email: 'dhyanesh@arete.app',
-        targetRole: 'Senior AI & Systems Architect',
-        avatarColor: const Color(0xFF38BDF8),
-        streakDays: 42,
-        totalProblemsSolved: 48,
-        totalFocusHours: 24.5,
-        createdAt: DateTime.now().subtract(const Duration(days: 42)),
-      ),
-      isAuthenticated: true,
-    );
-  }
+  AuthNotifier() : super(const AuthState(isAuthenticated: false));
 
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    await Future.delayed(const Duration(milliseconds: 300));
 
-    if (email.trim().isEmpty) {
+    if (email.trim().isEmpty || password.isEmpty) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Please enter a valid email address.',
+        errorMessage: 'Please enter both your email and password.',
       );
       return false;
     }
 
-    final name = email.split('@').first;
-    final formattedName = name.isNotEmpty
-        ? name[0].toUpperCase() + name.substring(1)
-        : 'User';
-
-    state = AuthState(
-      user: UserProfile(
-        id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
-        name: formattedName,
+    try {
+      final profile = await SupabaseService.signInWithPassword(
         email: email.trim(),
-        targetRole: 'Software Engineer & DSA Aspirant',
-        avatarColor: const Color(0xFF34D399),
-        streakDays: 1,
-        totalProblemsSolved: 0,
-        totalFocusHours: 0.0,
-        createdAt: DateTime.now(),
-      ),
-      isAuthenticated: true,
-      isLoading: false,
-    );
-    return true;
+        password: password,
+      );
+
+      if (profile != null) {
+        state = AuthState(
+          user: profile,
+          isAuthenticated: true,
+          isLoading: false,
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Authentication failed. Please check your credentials.',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Unable to sign in: $e',
+      );
+      return false;
+    }
   }
 
   Future<bool> signup(String name, String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    await Future.delayed(const Duration(milliseconds: 300));
 
-    if (name.trim().isEmpty || email.trim().isEmpty) {
+    if (name.trim().isEmpty || email.trim().isEmpty || password.isEmpty) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Please enter both your name and email.',
+        errorMessage: 'Please fill in all fields (name, email, password).',
       );
       return false;
     }
 
-    state = AuthState(
-      user: UserProfile(
-        id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
+    try {
+      final profile = await SupabaseService.signUp(
         name: name.trim(),
         email: email.trim(),
-        targetRole: 'Software Engineer & DSA Aspirant',
-        avatarColor: const Color(0xFF818CF8),
-        streakDays: 1,
-        totalProblemsSolved: 0,
-        totalFocusHours: 0.0,
-        createdAt: DateTime.now(),
-      ),
-      isAuthenticated: true,
-      isLoading: false,
-    );
-    return true;
+        password: password,
+      );
+
+      if (profile != null) {
+        // Starts with clean 0 state
+        state = AuthState(
+          user: profile,
+          isAuthenticated: true,
+          isLoading: false,
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Sign up failed. Please try again.',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Unable to create account: $e',
+      );
+      return false;
+    }
   }
 
   void guestLogin() {
     state = AuthState(
       user: UserProfile(
         id: 'usr-guest',
-        name: 'Dhyanesh (Guest)',
+        name: 'Guest Explorer',
         email: 'guest@arete.app',
-        targetRole: 'DSA & Systems Aspirant',
+        targetRole: 'Software Engineer & DSA Aspirant',
         avatarColor: const Color(0xFF38BDF8),
-        streakDays: 42,
-        totalProblemsSolved: 48,
-        totalFocusHours: 24.5,
-        createdAt: DateTime.now().subtract(const Duration(days: 42)),
+        streakDays: 0,
+        totalProblemsSolved: 0,
+        totalFocusHours: 0.0,
+        createdAt: DateTime.now(),
       ),
       isAuthenticated: true,
       isLoading: false,
     );
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await SupabaseService.signOut();
     state = const AuthState(
       user: null,
       isAuthenticated: false,
@@ -143,14 +145,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  void updateProfile({String? name, String? targetRole}) {
+  Future<void> updateProfile({String? name, String? targetRole}) async {
     if (state.user != null) {
-      state = state.copyWith(
-        user: state.user!.copyWith(
-          name: name ?? state.user!.name,
-          targetRole: targetRole ?? state.user!.targetRole,
-        ),
+      final updated = state.user!.copyWith(
+        name: name ?? state.user!.name,
+        targetRole: targetRole ?? state.user!.targetRole,
       );
+      await SupabaseService.saveUserProfile(updated);
+      state = state.copyWith(user: updated);
     }
   }
 }

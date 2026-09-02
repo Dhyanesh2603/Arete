@@ -17,8 +17,14 @@ import 'package:arete_os/presentation/providers/ai_coach_provider.dart';
 import 'package:arete_os/presentation/providers/auth_provider.dart';
 import 'package:arete_os/core/utils/natural_language_parser.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 void main() {
-  testWidgets('AreteApp boots and displays Landing Page hero section',
+  setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+  });
+  testWidgets('Arete boots and displays Landing Page hero section',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -32,17 +38,18 @@ void main() {
     expect(find.text('EXPLORE LIVE DEMO'), findsOneWidget);
   });
 
-  test('Auth Provider logs in user and provides personalized profile', () async {
+  test('Auth Provider signs up new user with clean initial state', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    final success = await container.read(authProvider.notifier).login('dhyanesh@example.com', 'password123');
+    final success = await container.read(authProvider.notifier).signup('Dhyanesh', 'dhyanesh@example.com', 'pass123');
     expect(success, isTrue);
 
     final user = container.read(authProvider).user;
     expect(user, isNotNull);
     expect(user!.name, equals('Dhyanesh'));
-    expect(user.email, equals('dhyanesh@example.com'));
+    expect(user.totalProblemsSolved, equals(0));
+    expect(user.totalFocusHours, equals(0.0));
   });
 
   test('Task Priorities are High (Red), Medium (Yellow), Low (Green)', () {
@@ -66,6 +73,16 @@ void main() {
 
     final lowParsed = NaturalLanguageTaskParser.parse('Read documentation #docs !low ~30m');
     expect(lowParsed.priority, equals(TaskPriority.low));
+  });
+
+  test('New User starts with 0 solved DSA problems', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final dsaState = container.read(dsaProvider);
+    expect(dsaState.problems, isNotEmpty);
+    // Fresh user has 0 solved problems
+    expect(dsaState.solvedCount, equals(0));
   });
 
   test('DSA Provider calculates Spaced Repetition (SM-2) intervals upon solving', () {

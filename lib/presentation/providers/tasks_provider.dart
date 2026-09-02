@@ -1,17 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/supabase_service.dart';
 import '../../domain/models/task.dart';
+import 'auth_provider.dart';
 
 class TasksState {
   final List<Task> tasks;
   final TaskPriority? filterPriority;
   final bool? filterCompleted;
   final String searchQuery;
+  final bool isLoading;
 
   const TasksState({
     required this.tasks,
     this.filterPriority,
     this.filterCompleted,
     this.searchQuery = '',
+    this.isLoading = false,
   });
 
   TasksState copyWith({
@@ -21,6 +25,7 @@ class TasksState {
     bool? filterCompleted,
     bool clearCompleted = false,
     String? searchQuery,
+    bool? isLoading,
   }) {
     return TasksState(
       tasks: tasks ?? this.tasks,
@@ -29,6 +34,7 @@ class TasksState {
       filterCompleted:
           clearCompleted ? null : (filterCompleted ?? this.filterCompleted),
       searchQuery: searchQuery ?? this.searchQuery,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 
@@ -55,80 +61,68 @@ class TasksState {
 }
 
 class TasksNotifier extends StateNotifier<TasksState> {
-  TasksNotifier() : super(_initialTasks());
+  final Ref _ref;
+  String? _currentUserId;
 
-  static TasksState _initialTasks() {
-    return TasksState(tasks: [
-      const Task(
-        id: 'tk-1',
-        title: 'Solve Binary Tree Maximum Path Sum (LeetCode 124)',
-        milestoneTitle: 'Step 13: Binary Trees',
-        projectTag: 'dsa',
-        priority: TaskPriority.high,
-        estimatedMinutes: 45,
-        isCompleted: false,
-      ),
-      const Task(
-        id: 'tk-2',
-        title: 'Benchmark Triton SRAM Shared Memory Bank Conflict Latency',
-        milestoneTitle: 'FlashAttention Kernel',
-        projectTag: 'system',
-        priority: TaskPriority.high,
-        estimatedMinutes: 60,
-        isCompleted: false,
-      ),
-      const Task(
-        id: 'tk-3',
-        title: 'Complete 3 Practice Problems on Monotonic Stack',
-        milestoneTitle: 'Step 9: Stack & Queues',
-        projectTag: 'dsa',
-        priority: TaskPriority.medium,
-        estimatedMinutes: 60,
-        isCompleted: true,
-      ),
-      const Task(
-        id: 'tk-4',
-        title: 'Review Lowest Common Ancestor (LCA) in BST',
-        milestoneTitle: 'Step 14: BST',
-        projectTag: 'dsa',
-        priority: TaskPriority.medium,
-        estimatedMinutes: 30,
-        isCompleted: false,
-      ),
-      const Task(
-        id: 'tk-5',
-        title: 'Read Google Borg Distributed Orchestration Research Paper',
-        milestoneTitle: 'Distributed Systems',
-        projectTag: 'reading',
-        priority: TaskPriority.low,
-        estimatedMinutes: 45,
-        isCompleted: false,
-      ),
-      const Task(
-        id: 'tk-6',
-        title: 'Log Weekly Retrospective in Arete Knowledge Base',
-        milestoneTitle: 'Arete Mastery',
-        projectTag: 'chores',
-        priority: TaskPriority.low,
-        estimatedMinutes: 15,
-        isCompleted: true,
-      ),
-    ]);
-  }
-
-  void toggleTask(String taskId) {
-    state = state.copyWith(
-      tasks: state.tasks.map((t) {
-        if (t.id == taskId) {
-          return t.copyWith(isCompleted: !t.isCompleted);
+  TasksNotifier(this._ref) : super(const TasksState(tasks: [])) {
+    // Listen to active user changes
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      final newUserId = next.user?.id;
+      if (newUserId != _currentUserId) {
+        _currentUserId = newUserId;
+        if (newUserId != null) {
+          loadUserTasks(newUserId);
+        } else {
+          state = const TasksState(tasks: []);
         }
-        return t;
-      }).toList(),
-    );
+      }
+    });
+
+    final initialUser = _ref.read(authProvider).user;
+    if (initialUser != null) {
+      _currentUserId = initialUser.id;
+      loadUserTasks(initialUser.id);
+    }
   }
 
-  void addTask(Task task) {
-    state = state.copyWith(tasks: [task, ...state.tasks]);
+  Future<void> loadUserTasks(String userId) async {
+    state = state.copyWith(isLoading: true);
+    final userTasks = await SupabaseService.fetchUserTasks(userId);
+    // Starts completely empty if new user
+    state = state.copyWith(tasks: userTasks, isLoading: false);
+  }
+
+  Future<void> toggleTask(String taskId) async {
+    final updated = state.tasks.map((t) {
+      if (t.id == taskId) {
+        return t.copyWith(
+          isCompleted: !t.isCompleted,
+          completedAt: !t.isCompleted ? DateTime.now() : null,
+        );
+      }
+      return t;
+    }).toList();
+
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> addTask(Task task) async {
+    final updated = [task, ...state.tasks];
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    final updated = state.tasks.where((t) => t.id != taskId).toList();
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
   }
 
   void setPriorityFilter(TaskPriority? p) {
@@ -154,5 +148,5 @@ class TasksNotifier extends StateNotifier<TasksState> {
 
 final tasksProvider =
     StateNotifierProvider<TasksNotifier, TasksState>((ref) {
-  return TasksNotifier();
+  return TasksNotifier(ref);
 });

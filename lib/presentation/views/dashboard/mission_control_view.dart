@@ -7,9 +7,9 @@ import '../../../domain/models/task.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dsa_provider.dart';
 import '../../providers/focus_session_provider.dart';
-import '../../providers/goals_provider.dart';
 import '../../providers/habits_provider.dart';
 import '../../providers/peer_cohort_provider.dart';
+import '../../providers/tasks_provider.dart';
 import '../../widgets/concentric_rings_painter.dart';
 import '../../widgets/telemetry_metric_card.dart';
 
@@ -19,13 +19,19 @@ class MissionControlView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dsaState = ref.watch(dsaProvider);
-    final goalsState = ref.watch(goalsProvider);
+    final tasksState = ref.watch(tasksProvider);
     final habits = ref.watch(habitsProvider);
     final cohortState = ref.watch(peerCohortProvider);
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
     final completedHabitsToday = habits.where((h) => h.isCompletedToday).length;
+    final highPriorityTasks = tasksState.tasks.where((t) => !t.isCompleted && t.priority == TaskPriority.high).toList();
+    final firstPendingTask = highPriorityTasks.isNotEmpty
+        ? highPriorityTasks.first
+        : tasksState.tasks.where((t) => !t.isCompleted).isNotEmpty
+            ? tasksState.tasks.where((t) => !t.isCompleted).first
+            : null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -37,12 +43,12 @@ class MissionControlView extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Personalized Header Banner
-              _buildPersonalizedHeader(context, user, isWide),
+              _buildPersonalizedHeader(context, user, isWide, dsaState),
               const SizedBox(height: 20),
 
               // 4 Glanceable Metric Cards
               _buildTelemetryGrid(
-                  dsaState, habits, completedHabitsToday, cohortState, isWide),
+                  dsaState, habits, completedHabitsToday, cohortState, isWide, user),
               const SizedBox(height: 20),
 
               // Main Command Layout
@@ -56,9 +62,9 @@ class MissionControlView extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildHeroNextActionCard(context, ref, goalsState),
+                          _buildHeroNextActionCard(context, ref, firstPendingTask),
                           const SizedBox(height: 20),
-                          _buildTimelineFlowCard(context),
+                          _buildTimelineFlowCard(context, tasksState),
                         ],
                       ),
                     ),
@@ -81,11 +87,11 @@ class MissionControlView extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeroNextActionCard(context, ref, goalsState),
+                    _buildHeroNextActionCard(context, ref, firstPendingTask),
                     const SizedBox(height: 20),
                     _buildCohortLiveStatusCard(context, cohortState),
                     const SizedBox(height: 20),
-                    _buildTimelineFlowCard(context),
+                    _buildTimelineFlowCard(context, tasksState),
                     const SizedBox(height: 20),
                     _buildStriverTopicsRadarCard(context, dsaState),
                   ],
@@ -98,9 +104,12 @@ class MissionControlView extends ConsumerWidget {
   }
 
   Widget _buildPersonalizedHeader(
-      BuildContext context, dynamic user, bool isWide) {
-    final userName = user?.name ?? 'Dhyanesh';
-    final userRole = user?.targetRole ?? 'Senior AI Systems Architect & DSA Master';
+      BuildContext context, dynamic user, bool isWide, DsaState dsaState) {
+    final userName = user?.name ?? 'Developer';
+    final userRole = user?.targetRole ?? 'Software Engineer & DSA Aspirant';
+
+    final focusRatio = ((user?.totalFocusHours ?? 0.0) / 5.0).clamp(0.0, 1.0);
+    final dsaRatio = dsaState.totalCount == 0 ? 0.0 : (dsaState.solvedCount / dsaState.totalCount);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -112,10 +121,10 @@ class MissionControlView extends ConsumerWidget {
       child: Row(
         children: [
           // Concentric Vector Rings Mini HUD
-          const ConcentricRingsWidget(
-            focusProgress: 0.70, // 3.5h / 5.0h
-            habitProgress: 1.00,
-            velocityProgress: 0.85,
+          ConcentricRingsWidget(
+            focusProgress: focusRatio,
+            habitProgress: 1.0,
+            velocityProgress: dsaRatio,
             size: 40,
           ),
           const SizedBox(width: 14),
@@ -160,14 +169,14 @@ class MissionControlView extends ConsumerWidget {
             const SizedBox(width: 12),
             _buildPill(
               label: 'STREAK',
-              value: '${user?.streakDays ?? 42} Days',
+              value: '${user?.streakDays ?? 0} Days',
               color: AppColors.amber,
               bgColor: AppColors.amberBg,
             ),
             const SizedBox(width: 8),
             _buildPill(
               label: 'SOLVED',
-              value: '${user?.totalProblemsSolved ?? 48} Problems',
+              value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
               color: AppColors.mint,
               bgColor: AppColors.mintBg,
             ),
@@ -178,13 +187,13 @@ class MissionControlView extends ConsumerWidget {
   }
 
   Widget _buildTelemetryGrid(dynamic dsaState, dynamic habits,
-      int completedHabitsToday, dynamic cohortState, bool isWide) {
+      int completedHabitsToday, dynamic cohortState, bool isWide, dynamic user) {
     return Row(
       children: [
         TelemetryMetricCard(
           label: 'Striver A2Z DSA Sheet',
           value: '${dsaState.solvedCount} / ${dsaState.totalCount}',
-          subValue: '+4 Today',
+          subValue: dsaState.solvedCount == 0 ? 'Start Step 1' : '${dsaState.solvedCount} Solved',
           accentColor: AppColors.cyan,
           bgColor: AppColors.cyanBg,
           icon: Icons.code_rounded,
@@ -192,7 +201,7 @@ class MissionControlView extends ConsumerWidget {
         const SizedBox(width: 12),
         TelemetryMetricCard(
           label: 'Deep Work Focus Today',
-          value: '3.5h',
+          value: '${user?.totalFocusHours ?? 0.0}h',
           subValue: '/ 5.0h Target',
           accentColor: AppColors.amber,
           bgColor: AppColors.amberBg,
@@ -201,17 +210,17 @@ class MissionControlView extends ConsumerWidget {
         const SizedBox(width: 12),
         TelemetryMetricCard(
           label: 'Habit Consistency',
-          value: '98.4%',
-          subValue: '$completedHabitsToday/${habits.length} Done',
+          value: habits.isEmpty ? '0 Active' : '$completedHabitsToday/${habits.length}',
+          subValue: habits.isEmpty ? 'Create First Habit' : 'Completed Today',
           accentColor: AppColors.mint,
           bgColor: AppColors.mintBg,
           icon: Icons.repeat_rounded,
         ),
         const SizedBox(width: 12),
         TelemetryMetricCard(
-          label: 'Study Squad War-Room',
+          label: 'Study Squad Alpha',
           value: '${cohortState.cohort.totalGroupProblemsToday} Solved',
-          subValue: '${cohortState.cohort.activeFocusingMembersCount} Live',
+          subValue: '${cohortState.cohort.activeFocusingMembersCount} Live Now',
           accentColor: AppColors.lavender,
           bgColor: AppColors.lavenderBg,
           icon: Icons.groups_rounded,
@@ -248,8 +257,80 @@ class MissionControlView extends ConsumerWidget {
   }
 
   Widget _buildHeroNextActionCard(
-      BuildContext context, WidgetRef ref, GoalsState goalsState) {
-    final heroTask = goalsState.heroNextAction;
+      BuildContext context, WidgetRef ref, Task? heroTask) {
+    if (heroTask == null) {
+      return Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceTier1,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderSubtle),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.cyanBg,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text('NEXT ACTION',
+                      style: AppTypography.monoBadge
+                          .copyWith(color: AppColors.cyan, fontSize: 10)),
+                ),
+                const SizedBox(width: 10),
+                Text('Ready for execution', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No active tasks in your queue.',
+              style: AppTypography.heading1.copyWith(fontSize: 17, color: AppColors.textHigh),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Add your first high-priority task in Tasks or start practicing from the Striver DSA Sheet.',
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/tasks'),
+                  icon: const Icon(Icons.add_task_rounded, size: 16, color: Color(0xFF0B0D13)),
+                  label: Text(
+                    'ADD FIRST TASK',
+                    style: AppTypography.monoBadge.copyWith(
+                      color: const Color(0xFF0B0D13),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cyan,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/dsa'),
+                  icon: const Icon(Icons.code_rounded, size: 16, color: AppColors.textMedium),
+                  label: Text('Open Striver Sheet', style: AppTypography.bodyMedium.copyWith(color: AppColors.textMedium)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.borderSubtle),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -257,7 +338,7 @@ class MissionControlView extends ConsumerWidget {
         color: AppColors.surfaceTier1,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: AppColors.cyan.withValues(alpha: 0.35), width: 1.2),
+            color: heroTask.priority.color.withValues(alpha: 0.4), width: 1.2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,46 +346,41 @@ class MissionControlView extends ConsumerWidget {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.cyanBg,
+                  color: heroTask.priority.backgroundColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text('PRIMARY NEXT ACTION',
                     style: AppTypography.monoBadge
-                        .copyWith(color: AppColors.cyan, fontSize: 10)),
+                        .copyWith(color: heroTask.priority.color, fontSize: 10)),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  heroTask?.milestoneTitle ?? 'Striver A2Z: Step 13 Trees',
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.textMuted),
+                  heroTask.milestoneTitle ?? (heroTask.projectTag != null ? '#${heroTask.projectTag}' : 'Task Queue'),
+                  style: AppTypography.caption.copyWith(color: AppColors.textMuted),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              // Simplified Priority Badge: High (Red)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: TaskPriority.high.backgroundColor,
+                  color: heroTask.priority.backgroundColor,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: TaskPriority.high.color.withValues(alpha: 0.4)),
+                  border: Border.all(color: heroTask.priority.color.withValues(alpha: 0.4)),
                 ),
                 child: Text(
-                  'HIGH PRIORITY',
+                  '${heroTask.priority.label.toUpperCase()} PRIORITY',
                   style: AppTypography.monoBadge
-                      .copyWith(color: TaskPriority.high.color, fontSize: 9),
+                      .copyWith(color: heroTask.priority.color, fontSize: 9),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
-            heroTask?.title ??
-                'Solve Binary Tree Maximum Path Sum (LeetCode 124)',
+            heroTask.title,
             style: AppTypography.heading1.copyWith(
               color: AppColors.textHigh,
               fontSize: 18,
@@ -312,9 +388,8 @@ class MissionControlView extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Sub-goal: Master bottom-up recursion subtree contribution logic before moving to Graph Algorithms.',
-            style:
-                AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+            'Estimated duration: ${heroTask.estimatedMinutes} minutes (${heroTask.estimatedPomodoros} Pomodoro session).',
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
           ),
           const SizedBox(height: 18),
           Row(
@@ -322,11 +397,9 @@ class MissionControlView extends ConsumerWidget {
               ElevatedButton.icon(
                 onPressed: () {
                   ref.read(focusSessionProvider.notifier).startSession(
-                        taskTitle: heroTask?.title ??
-                            'Binary Tree Maximum Path Sum',
-                        objective:
-                            'Master recursion & subtree contribution logic',
-                        durationMinutes: 45,
+                        taskTitle: heroTask.title,
+                        objective: 'Priority: ${heroTask.priority.label}',
+                        durationMinutes: heroTask.estimatedMinutes,
                       );
                   context.go('/focus');
                 },
@@ -352,12 +425,12 @@ class MissionControlView extends ConsumerWidget {
               const SizedBox(width: 12),
               OutlinedButton.icon(
                 onPressed: () {
-                  context.go('/dsa');
+                  context.go('/tasks');
                 },
-                icon: const Icon(Icons.list_alt_rounded,
+                icon: const Icon(Icons.checklist_rounded,
                     size: 16, color: AppColors.textMedium),
                 label: Text(
-                  'Open DSA Sheet',
+                  'View All Tasks',
                   style: AppTypography.bodyMedium
                       .copyWith(color: AppColors.textMedium),
                 ),
@@ -377,7 +450,7 @@ class MissionControlView extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimelineFlowCard(BuildContext context) {
+  Widget _buildTimelineFlowCard(BuildContext context, TasksState tasksState) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -392,108 +465,64 @@ class MissionControlView extends ConsumerWidget {
             children: [
               Text('TODAY SCHEDULE', style: AppTypography.heading2),
               const Spacer(),
-              Text('08:00 - 20:00',
-                  style: AppTypography.caption
-                      .copyWith(color: AppColors.textMuted)),
+              InkWell(
+                onTap: () => context.go('/calendar'),
+                child: Text('Calendar ->', style: AppTypography.caption.copyWith(color: AppColors.cyan)),
+              ),
             ],
           ),
           const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 180,
-                  child: _buildTimeBlock(
-                    title: '08:00 DSA Practice',
-                    subtitle: 'Binary Trees LCA (Done)',
-                    isDone: true,
-                    color: AppColors.mint,
-                    bgColor: AppColors.mintBg,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 180,
-                  child: _buildTimeBlock(
-                    title: '11:00 Max Path Sum',
-                    subtitle: 'LeetCode 124 (Current)',
-                    isActive: true,
-                    color: AppColors.cyan,
-                    bgColor: AppColors.cyanBg,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 180,
-                  child: _buildTimeBlock(
-                    title: '14:30 Squad Sync',
-                    subtitle: 'Striver Step 13 Review',
-                    color: AppColors.lavender,
-                    bgColor: AppColors.lavenderBg,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 180,
-                  child: _buildTimeBlock(
-                    title: '18:00 Cardio & Recovery',
-                    subtitle: '45m Running (Pending)',
-                    color: AppColors.amber,
-                    bgColor: AppColors.amberBg,
-                  ),
-                ),
-              ],
+          if (tasksState.tasks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'No blocks scheduled yet today. Tasks you add with time estimates will appear in your timeline.',
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: tasksState.tasks.take(4).map((t) {
+                  return Container(
+                    width: 190,
+                    margin: const EdgeInsets.only(right: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: t.priority.backgroundColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: t.priority.color.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.title,
+                          style: AppTypography.monoBadge.copyWith(
+                            fontSize: 11,
+                            color: t.priority.color,
+                            decoration: t.isCompleted ? TextDecoration.lineThrough : null,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${t.estimatedMinutes}m · ${t.priority.label}',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeBlock({
-    required String title,
-    required String subtitle,
-    bool isDone = false,
-    bool isActive = false,
-    required Color color,
-    required Color bgColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isActive
-              ? color
-              : color.withValues(alpha: isDone ? 0.3 : 0.2),
-          width: isActive ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTypography.monoBadge.copyWith(
-              fontSize: 11,
-              color: color,
-              decoration: isDone ? TextDecoration.lineThrough : null,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            subtitle,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textMuted,
-              fontSize: 10,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
         ],
       ),
     );

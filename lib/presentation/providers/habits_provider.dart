@@ -1,48 +1,39 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/supabase_service.dart';
 import '../../domain/models/habit.dart';
+import 'auth_provider.dart';
 
 class HabitsNotifier extends StateNotifier<List<Habit>> {
-  HabitsNotifier() : super(_initialHabits());
+  final Ref _ref;
+  String? _currentUserId;
 
-  static List<Habit> _initialHabits() {
-    return [
-      Habit(
-        id: 'h-1',
-        title: 'Solve 3 Striver A2Z Problems Daily',
-        frequency: HabitFrequency.dailyMorning,
-        consistencyScore: 98.4,
-        isCompletedToday: true,
-        last30DaysHistory: List.generate(30, (i) => i % 7 != 0),
-      ),
-      Habit(
-        id: 'h-2',
-        title: '2 Hours Deep Focus Code Lab',
-        frequency: HabitFrequency.dailyMorning,
-        consistencyScore: 94.2,
-        isCompletedToday: true,
-        last30DaysHistory: List.generate(30, (i) => i % 5 != 0),
-      ),
-      Habit(
-        id: 'h-3',
-        title: 'Read 1 Technical Research Paper / Note',
-        frequency: HabitFrequency.dailyEvening,
-        consistencyScore: 88.0,
-        isCompletedToday: false,
-        last30DaysHistory: List.generate(30, (i) => i % 4 != 0),
-      ),
-      Habit(
-        id: 'h-4',
-        title: '45m Physical Training & Recovery',
-        frequency: HabitFrequency.dailyEvening,
-        consistencyScore: 91.5,
-        isCompletedToday: false,
-        last30DaysHistory: List.generate(30, (i) => i % 6 != 0),
-      ),
-    ];
+  HabitsNotifier(this._ref) : super([]) {
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      final newUserId = next.user?.id;
+      if (newUserId != _currentUserId) {
+        _currentUserId = newUserId;
+        if (newUserId != null) {
+          loadUserHabits(newUserId);
+        } else {
+          state = [];
+        }
+      }
+    });
+
+    final initialUser = _ref.read(authProvider).user;
+    if (initialUser != null) {
+      _currentUserId = initialUser.id;
+      loadUserHabits(initialUser.id);
+    }
   }
 
-  void toggleHabitToday(String habitId) {
-    state = state.map((h) {
+  Future<void> loadUserHabits(String userId) async {
+    final userHabits = await SupabaseService.fetchUserHabits(userId);
+    state = userHabits;
+  }
+
+  Future<void> toggleHabitToday(String habitId) async {
+    final updated = state.map((h) {
       if (h.id == habitId) {
         final nextStatus = !h.isCompletedToday;
         final history = List<bool>.from(h.last30DaysHistory);
@@ -50,7 +41,7 @@ class HabitsNotifier extends StateNotifier<List<Habit>> {
           history[history.length - 1] = nextStatus;
         }
         final trueCount = history.where((v) => v).length;
-        final newScore = (trueCount / history.length) * 100.0;
+        final newScore = history.isEmpty ? 100.0 : (trueCount / history.length) * 100.0;
         return h.copyWith(
           isCompletedToday: nextStatus,
           last30DaysHistory: history,
@@ -59,10 +50,31 @@ class HabitsNotifier extends StateNotifier<List<Habit>> {
       }
       return h;
     }).toList();
+
+    state = updated;
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserHabits(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> addHabit(Habit habit) async {
+    final updated = [...state, habit];
+    state = updated;
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserHabits(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> deleteHabit(String habitId) async {
+    final updated = state.where((h) => h.id != habitId).toList();
+    state = updated;
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserHabits(_currentUserId!, updated);
+    }
   }
 }
 
 final habitsProvider =
     StateNotifierProvider<HabitsNotifier, List<Habit>>((ref) {
-  return HabitsNotifier();
+  return HabitsNotifier(ref);
 });

@@ -9,14 +9,12 @@ import '../providers/focus_session_provider.dart';
 
 class AppSidebar extends ConsumerWidget {
   final String currentRoute;
-  final bool isExpanded;
-  final VoidCallback onToggleExpanded;
+  final VoidCallback onClose;
 
   const AppSidebar({
     super.key,
     required this.currentRoute,
-    required this.isExpanded,
-    required this.onToggleExpanded,
+    required this.onClose,
   });
 
   @override
@@ -26,82 +24,85 @@ class AppSidebar extends ConsumerWidget {
     final user = authState.user;
     final isFocusActive = focusState.state == FocusModeState.active;
 
-    final sidebarWidth = isExpanded ? 260.0 : 64.0;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      width: sidebarWidth,
+    return Container(
+      width: 280,
+      height: double.infinity,
       decoration: const BoxDecoration(
         color: AppColors.surfaceTier1,
         border: Border(
           right: BorderSide(color: AppColors.borderSubtle, width: 1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black45,
+            blurRadius: 20,
+            offset: Offset(4, 0),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Top Header: Logo & Toggle
+          // Top Header: Logo, Title & Close Button
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: isExpanded ? 16 : 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                InkWell(
-                  onTap: () => context.go('/dashboard'),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.cyanBg,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4)),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'A',
-                        style: AppTypography.heading2.copyWith(
-                          color: AppColors.cyan,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.cyanBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A',
+                      style: AppTypography.heading2.copyWith(
+                        color: AppColors.cyan,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
                       ),
                     ),
                   ),
                 ),
-                if (isExpanded) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ARETE',
-                          style: AppTypography.heading2.copyWith(
-                            fontSize: 15,
-                            letterSpacing: 1.2,
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ARETE',
+                        style: AppTypography.heading2.copyWith(
+                          fontSize: 16,
+                          letterSpacing: 1.2,
                         ),
-                        Text(
-                          'Productivity Platform',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textMuted,
-                            fontSize: 10,
-                          ),
+                      ),
+                      Text(
+                        'Productivity Platform',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 10,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
+                  tooltip: 'Close Menu',
+                  onPressed: onClose,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // User Profile Card (when expanded)
-          if (isExpanded && user != null) ...[
+          // User Profile Card (if authenticated)
+          if (user != null) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Container(
@@ -114,14 +115,14 @@ class AppSidebar extends ConsumerWidget {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      radius: 14,
+                      radius: 16,
                       backgroundColor: user.avatarColor,
                       child: Text(
-                        user.name.isNotEmpty ? user.name[0] : 'U',
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                         style: AppTypography.monoBadge.copyWith(
                           color: const Color(0xFF0B0D13),
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -134,7 +135,7 @@ class AppSidebar extends ConsumerWidget {
                             user.name,
                             style: AppTypography.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: 13,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -160,10 +161,10 @@ class AppSidebar extends ConsumerWidget {
 
           const Divider(color: AppColors.borderSubtle, height: 1),
 
-          // Nav Items Scrollable Rail
+          // Navigation Links
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               children: [
                 _buildNavItem(
                   context,
@@ -178,7 +179,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.code_rounded,
                   activeIcon: Icons.code_rounded,
                   title: 'DSA Roadmap',
-                  subtitle: 'Striver A2Z Sheet',
+                  subtitle: 'Striver A2Z Sheet (0/455)',
                   route: '/dsa',
                 ),
                 _buildNavItem(
@@ -218,7 +219,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.repeat_rounded,
                   activeIcon: Icons.repeat_rounded,
                   title: 'Habit Vectors',
-                  subtitle: '365-day consistency',
+                  subtitle: 'Consistency tracking',
                   route: '/habits',
                 ),
                 _buildNavItem(
@@ -276,36 +277,32 @@ class AppSidebar extends ConsumerWidget {
 
           const Divider(color: AppColors.borderSubtle, height: 1),
 
-          // Bottom Action: Command Palette & Settings & Logout
+          // Bottom Deck Actions
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Column(
               children: [
-                // Quick Search Trigger
+                // Command Palette Trigger
                 InkWell(
-                  onTap: () => ref.read(commandPaletteProvider.notifier).open(),
+                  onTap: () {
+                    onClose();
+                    ref.read(commandPaletteProvider.notifier).open();
+                  },
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isExpanded ? 12 : 8,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceTier2,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: AppColors.borderSubtle),
                     ),
                     child: Row(
-                      mainAxisAlignment:
-                          isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.search_rounded, size: 16, color: AppColors.cyan),
-                        if (isExpanded) ...[
-                          const SizedBox(width: 8),
-                          Text('Command Deck', style: AppTypography.caption),
-                          const Spacer(),
-                          Text('Cmd+K', style: AppTypography.monoBadge.copyWith(fontSize: 9)),
-                        ],
+                        const SizedBox(width: 8),
+                        Text('Command Deck', style: AppTypography.caption),
+                        const Spacer(),
+                        Text('Cmd+K', style: AppTypography.monoBadge.copyWith(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -314,53 +311,50 @@ class AppSidebar extends ConsumerWidget {
 
                 // Settings
                 InkWell(
-                  onTap: () => context.go('/settings'),
+                  onTap: () {
+                    onClose();
+                    context.go('/settings');
+                  },
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isExpanded ? 12 : 8,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
-                      mainAxisAlignment:
-                          isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.settings_outlined, size: 16, color: AppColors.textMuted),
-                        if (isExpanded) ...[
-                          const SizedBox(width: 10),
-                          Text('Settings', style: AppTypography.bodyMedium.copyWith(fontSize: 13)),
-                        ],
+                        const SizedBox(width: 10),
+                        Text('Settings', style: AppTypography.bodyMedium.copyWith(fontSize: 13)),
                       ],
                     ),
                   ),
                 ),
 
-                if (isExpanded) ...[
-                  // Logout
-                  InkWell(
-                    onTap: () {
-                      ref.read(authProvider.notifier).logout();
+                // Sign Out
+                InkWell(
+                  onTap: () async {
+                    onClose();
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) {
                       context.go('/');
-                    },
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.logout_rounded, size: 16, color: AppColors.rose),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Sign Out',
-                            style: AppTypography.bodyMedium.copyWith(
-                              fontSize: 13,
-                              color: AppColors.rose,
-                            ),
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.logout_rounded, size: 16, color: AppColors.rose),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Sign Out',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 13,
+                            color: AppColors.rose,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -382,79 +376,67 @@ class AppSidebar extends ConsumerWidget {
     final isActive = currentRoute == route;
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isExpanded ? 10 : 8,
-        vertical: 2,
-      ),
-      child: Tooltip(
-        message: isExpanded ? '' : '$title — $subtitle',
-        child: InkWell(
-          onTap: () {
-            if (currentRoute != route) {
-              context.go(route);
-            }
-          },
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isExpanded ? 10 : 0,
-              vertical: 8,
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: InkWell(
+        onTap: () {
+          onClose();
+          if (currentRoute != route) {
+            context.go(route);
+          }
+        },
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.surfaceHover : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isActive
+                  ? AppColors.cyan.withValues(alpha: 0.3)
+                  : isPulseGlow
+                      ? AppColors.amber.withValues(alpha: 0.4)
+                      : Colors.transparent,
             ),
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.surfaceHover : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                size: 18,
                 color: isActive
-                    ? AppColors.cyan.withValues(alpha: 0.3)
+                    ? AppColors.cyan
                     : isPulseGlow
-                        ? AppColors.amber.withValues(alpha: 0.4)
-                        : Colors.transparent,
+                        ? AppColors.amber
+                        : AppColors.textMuted,
               ),
-            ),
-            child: Row(
-              mainAxisAlignment:
-                  isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isActive ? activeIcon : icon,
-                  size: 18,
-                  color: isActive
-                      ? AppColors.cyan
-                      : isPulseGlow
-                          ? AppColors.amber
-                          : AppColors.textMuted,
-                ),
-                if (isExpanded) ...[
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: isActive ? AppColors.cyan : AppColors.textHigh,
-                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          subtitle,
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSubtle,
-                            fontSize: 10,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isActive ? AppColors.cyan : AppColors.textHigh,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    Text(
+                      subtitle,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSubtle,
+                        fontSize: 10,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -26,7 +26,7 @@ class ShellScaffold extends ConsumerStatefulWidget {
 
 class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
   final FocusNode _keyboardFocusNode = FocusNode();
-  bool _isSidebarExpanded = true;
+  bool _isDrawerOpen = false;
 
   @override
   void dispose() {
@@ -44,10 +44,12 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
         ref.read(commandPaletteProvider.notifier).toggle();
       }
 
-      // Escape: Close Command Palette
+      // Escape: Close Drawer or Command Palette
       if (event.logicalKey == LogicalKeyboardKey.escape) {
         if (ref.read(commandPaletteProvider).isOpen) {
           ref.read(commandPaletteProvider.notifier).close();
+        } else if (_isDrawerOpen) {
+          setState(() => _isDrawerOpen = false);
         }
       }
     }
@@ -87,30 +89,49 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
         backgroundColor: AppColors.canvas,
         body: Stack(
           children: [
-            Row(
+            // Main Content Area
+            Column(
               children: [
-                // Slideable / Collapsible Detailed Sidebar
-                AppSidebar(
-                  currentRoute: widget.currentRoute,
-                  isExpanded: _isSidebarExpanded,
-                  onToggleExpanded: () {
-                    setState(() => _isSidebarExpanded = !_isSidebarExpanded);
-                  },
-                ),
-                // Main Content Stage with Top App Bar
-                Expanded(
-                  child: Column(
-                    children: [
-                      // Top Universal Navigation Header
-                      _buildTopHeader(context, user, isFocusActive),
-                      // View Content Body
-                      Expanded(child: widget.child),
-                    ],
-                  ),
-                ),
+                // Top Universal App Bar with Hamburger Slide Toggle
+                _buildTopHeader(context, user, isFocusActive),
+                // Main View Body
+                Expanded(child: widget.child),
               ],
             ),
-            // Global Raycast-style Command Palette Overlay
+
+            // Dimmed Scrim Backdrop when Slideable Drawer is Open
+            if (_isDrawerOpen)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _isDrawerOpen = false);
+                  },
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _isDrawerOpen ? 1.0 : 0.0,
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ),
+              ),
+
+            // Slideable Animated Left Drawer Navigation
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              top: 0,
+              bottom: 0,
+              left: _isDrawerOpen ? 0 : -290,
+              child: AppSidebar(
+                currentRoute: widget.currentRoute,
+                onClose: () {
+                  setState(() => _isDrawerOpen = false);
+                },
+              ),
+            ),
+
+            // Global Command Palette Overlay
             if (paletteState.isOpen)
               Positioned.fill(
                 child: GestureDetector(
@@ -132,35 +153,63 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
   Widget _buildTopHeader(BuildContext context, dynamic user, bool isFocusActive) {
     return Container(
       height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: AppColors.surfaceTier1,
         border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Row(
         children: [
-          // Slideable Menu Hamburger Toggle Button
+          // Slideable Menu Hamburger Button
           IconButton(
-            icon: Icon(
-              _isSidebarExpanded ? Icons.menu_open_rounded : Icons.menu_rounded,
+            icon: const Icon(
+              Icons.menu_rounded,
               color: AppColors.cyan,
-              size: 20,
+              size: 22,
             ),
-            tooltip: _isSidebarExpanded ? 'Collapse Menu' : 'Slide Open Detailed Menu',
+            tooltip: 'Open Menu Drawer',
             onPressed: () {
-              setState(() => _isSidebarExpanded = !_isSidebarExpanded);
+              setState(() => _isDrawerOpen = !_isDrawerOpen);
             },
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
-          // Route Title Breadcrumb
-          Text(
-            _getRouteTitle(widget.currentRoute),
-            style: AppTypography.heading2.copyWith(fontSize: 15),
+          // Logo & Route Title Breadcrumb
+          InkWell(
+            onTap: () => setState(() => _isDrawerOpen = true),
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.cyanBg,
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: AppColors.cyan.withValues(alpha: 0.3)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A',
+                      style: AppTypography.monoBadge.copyWith(
+                        color: AppColors.cyan,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _getRouteTitle(widget.currentRoute),
+                  style: AppTypography.heading2.copyWith(fontSize: 15),
+                ),
+              ],
+            ),
           ),
           const Spacer(),
 
-          // Active Focus Timer Indicator (if active)
+          // Active Focus Timer Indicator (if running)
           if (isFocusActive) ...[
             InkWell(
               onTap: () => context.go('/focus'),
@@ -199,7 +248,7 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
             onTap: () => ref.read(commandPaletteProvider.notifier).open(),
             borderRadius: BorderRadius.circular(6),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.surfaceTier2,
                 borderRadius: BorderRadius.circular(6),
@@ -216,18 +265,18 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
           ),
           const SizedBox(width: 14),
 
-          // User Avatar Pill
+          // User Profile Avatar / Menu trigger
           if (user != null)
             InkWell(
-              onTap: () => context.go('/settings'),
+              onTap: () => setState(() => _isDrawerOpen = true),
               borderRadius: BorderRadius.circular(20),
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 12,
+                    radius: 13,
                     backgroundColor: user.avatarColor,
                     child: Text(
-                      user.name.isNotEmpty ? user.name[0] : 'U',
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                       style: AppTypography.monoBadge.copyWith(
                         color: const Color(0xFF0B0D13),
                         fontSize: 10,

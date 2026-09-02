@@ -1,5 +1,5 @@
 name: arete_os
-description: "Arete - Personal Operating System for Ambitious Minds"
+description: "Arete - Personal Platform for Ambitious Minds"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -20,6 +20,8 @@ dependencies:
   intl: ^0.19.0
   uuid: ^4.4.0
   shared_preferences: ^2.2.3
+  supabase: ^2.16.1
+  http: ^1.2.1
 
 dev_dependencies:
   flutter_test:

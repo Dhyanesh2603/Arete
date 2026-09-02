@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/striver_a2z_data.dart';
+import '../../core/services/supabase_service.dart';
 import '../../domain/models/dsa_problem.dart';
-import 'peer_cohort_provider.dart';
+import 'auth_provider.dart';
 
 class DsaState {
   final List<DsaProblem> problems;
@@ -10,6 +11,7 @@ class DsaState {
   final DsaStatus? selectedStatus;
   final bool filterDueForRevisionOnly;
   final String searchQuery;
+  final bool isLoading;
 
   const DsaState({
     required this.problems,
@@ -18,6 +20,7 @@ class DsaState {
     this.selectedStatus,
     this.filterDueForRevisionOnly = false,
     this.searchQuery = '',
+    this.isLoading = false,
   });
 
   DsaState copyWith({
@@ -30,6 +33,7 @@ class DsaState {
     bool clearStatus = false,
     bool? filterDueForRevisionOnly,
     String? searchQuery,
+    bool? isLoading,
   }) {
     return DsaState(
       problems: problems ?? this.problems,
@@ -43,6 +47,7 @@ class DsaState {
       filterDueForRevisionOnly:
           filterDueForRevisionOnly ?? this.filterDueForRevisionOnly,
       searchQuery: searchQuery ?? this.searchQuery,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 
@@ -57,98 +62,186 @@ class DsaState {
       if (selectedStatus != null && p.status != selectedStatus) {
         return false;
       }
-      if (filterDueForRevisionOnly && !p.isDueForRevision) {
-        return false;
-      }
+      if (filterDueForRevisionOnly && !p.isDueForRevision) return false;
       if (searchQuery.isNotEmpty) {
-        final query = searchQuery.toLowerCase();
-        final matchesTitle = p.title.toLowerCase().contains(query);
-        final matchesPattern = p.pattern.toLowerCase().contains(query);
-        final matchesSubTopic = p.subTopic.toLowerCase().contains(query);
-        final matchesStep = p.stepTitle.toLowerCase().contains(query);
-        if (!matchesTitle && !matchesPattern && !matchesSubTopic && !matchesStep) {
-          return false;
-        }
+        final q = searchQuery.toLowerCase();
+        final matchesTitle = p.title.toLowerCase().contains(q);
+        final matchesPattern = p.pattern.toLowerCase().contains(q);
+        final matchesStep = p.stepTitle.toLowerCase().contains(q);
+        if (!matchesTitle && !matchesPattern && !matchesStep) return false;
       }
       return true;
     }).toList();
   }
 
-  int get totalCount => problems.length;
   int get solvedCount =>
       problems.where((p) => p.status == DsaStatus.solved).length;
+
+  int get totalCount => problems.length;
+
   int get revisionDueCount =>
       problems.where((p) => p.isDueForRevision).length;
 
+  double get overallProgressPercentage =>
+      totalCount == 0 ? 0.0 : (solvedCount / totalCount) * 100.0;
+
   List<DsaStepSummary> get stepSummaries {
     final Map<int, List<DsaProblem>> grouped = {};
-    for (var p in problems) {
+    for (final p in problems) {
       grouped.putIfAbsent(p.stepNumber, () => []).add(p);
     }
 
-    return grouped.entries.map((entry) {
-      final stepProblems = entry.value;
-      final stepNum = entry.key;
-      final title = stepProblems.first.stepTitle;
+    final sortedKeys = grouped.keys.toList()..sort();
+
+    return sortedKeys.map((stepNum) {
+      final stepProblems = grouped[stepNum]!;
+      final stepTitle =
+          stepProblems.isNotEmpty ? stepProblems.first.stepTitle : 'Step $stepNum';
       final solved =
           stepProblems.where((p) => p.status == DsaStatus.solved).length;
+      final total = stepProblems.length;
+
       return DsaStepSummary(
         stepNumber: stepNum,
-        title: title,
-        totalProblems: stepProblems.length,
+        title: stepTitle,
+        totalProblems: total,
         solvedProblems: solved,
+        progressPercentage: total == 0 ? 0.0 : (solved / total) * 100.0,
       );
-    }).toList()
-      ..sort((a, b) => a.stepNumber.compareTo(b.stepNumber));
+    }).toList();
   }
 }
 
+class DsaStepSummary {
+  final int stepNumber;
+  final String title;
+  final int totalProblems;
+  final int solvedProblems;
+  final double progressPercentage;
+
+  const DsaStepSummary({
+    required this.stepNumber,
+    required this.title,
+    required this.totalProblems,
+    required this.solvedProblems,
+    required this.progressPercentage,
+  });
+}
+
 class DsaNotifier extends StateNotifier<DsaState> {
-  final Ref ref;
+  final Ref _ref;
+  String? _currentUserId;
 
-  DsaNotifier(this.ref)
-      : super(DsaState(problems: StriverA2ZData.problems));
+  DsaNotifier(this._ref)
+      : super(DsaState(
+          problems: _getCleanStriverProblems(),
+        )) {
+    // Listen to user auth changes
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      final newUserId = next.user?.id;
+      if (newUserId != _currentUserId) {
+        _currentUserId = newUserId;
+        if (newUserId != null) {
+          loadUserDsaProgress(newUserId);
+        } else {
+          state = DsaState(problems: _getCleanStriverProblems());
+        }
+      }
+    });
 
-  void toggleProblemStatus(String problemId) {
-    state = state.copyWith(
-      problems: state.problems.map((p) {
-        if (p.id == problemId) {
-          final nextStatus = p.status == DsaStatus.solved
-              ? DsaStatus.todo
-              : DsaStatus.solved;
+    final initialUser = _ref.read(authProvider).user;
+    if (initialUser != null) {
+      _currentUserId = initialUser.id;
+      loadUserDsaProgress(initialUser.id);
+    }
+  }
 
-          DateTime? nextRev;
-          int reviewCount = p.reviewCount;
-          DateTime? lastSolved;
+  static List<DsaProblem> _getCleanStriverProblems() {
+    // Clean initial state: All problems in todo status (0 solved)
+    return StriverA2ZData.problems.map((p) => p.copyWith(
+      status: DsaStatus.todo,
+      reviewCount: 0,
+    )).toList();
+  }
 
-          if (nextStatus == DsaStatus.solved) {
-            lastSolved = DateTime.now();
-            reviewCount += 1;
-            // SM-2 Spaced Repetition interval calculation
-            final days = reviewCount == 1
-                ? 1
-                : reviewCount == 2
-                    ? 3
-                    : reviewCount == 3
-                        ? 7
-                        : reviewCount == 4
-                            ? 21
-                            : 45;
-            nextRev = lastSolved.add(Duration(days: days));
-            // Trigger cohort sync
-            ref.read(peerCohortProvider.notifier).incrementMyProblemsSolved();
+  Future<void> loadUserDsaProgress(String userId) async {
+    state = state.copyWith(isLoading: true);
+    final userProgress = await SupabaseService.fetchUserDsaProgress(userId);
+
+    final updatedProblems = _getCleanStriverProblems().map((p) {
+      if (userProgress.containsKey(p.id)) {
+        final data = userProgress[p.id] as Map<String, dynamic>;
+        final statusStr = data['status'] as String? ?? 'todo';
+        final status = DsaStatus.values.firstWhere(
+          (s) => s.name == statusStr,
+          orElse: () => DsaStatus.todo,
+        );
+        final reviewCount = data['reviewCount'] as int? ?? 0;
+        final nextRevStr = data['nextRevisionDate'] as String?;
+        final nextRevision = nextRevStr != null ? DateTime.tryParse(nextRevStr) : null;
+
+        return p.copyWith(
+          status: status,
+          reviewCount: reviewCount,
+          nextRevisionDate: nextRevision,
+        );
+      }
+      return p;
+    }).toList();
+
+    state = state.copyWith(problems: updatedProblems, isLoading: false);
+  }
+
+  Future<void> toggleProblemStatus(String problemId) async {
+    final now = DateTime.now();
+
+    final updated = state.problems.map((p) {
+      if (p.id == problemId) {
+        final newStatus = p.status == DsaStatus.solved
+            ? DsaStatus.todo
+            : DsaStatus.solved;
+
+        int newReviewCount = p.reviewCount;
+        DateTime? nextRevisionDate;
+
+        if (newStatus == DsaStatus.solved) {
+          newReviewCount += 1;
+          int intervalDays = 1;
+          if (newReviewCount == 1) {
+            intervalDays = 1;
+          } else if (newReviewCount == 2) {
+            intervalDays = 3;
+          } else if (newReviewCount == 3) {
+            intervalDays = 7;
+          } else if (newReviewCount == 4) {
+            intervalDays = 21;
+          } else {
+            intervalDays = 45;
           }
+          nextRevisionDate = now.add(Duration(days: intervalDays));
+        }
 
-          return p.copyWith(
-            status: nextStatus,
-            lastSolvedAt: lastSolved,
-            nextRevisionDate: nextRev,
-            reviewCount: reviewCount,
+        if (_currentUserId != null) {
+          SupabaseService.saveUserDsaProblemStatus(
+            _currentUserId!,
+            problemId,
+            newStatus,
+            reviewCount: newReviewCount,
+            nextRevisionDate: nextRevisionDate,
           );
         }
-        return p;
-      }).toList(),
-    );
+
+        return p.copyWith(
+          status: newStatus,
+          lastSolvedAt: newStatus == DsaStatus.solved ? now : null,
+          reviewCount: newReviewCount,
+          nextRevisionDate: nextRevisionDate,
+        );
+      }
+      return p;
+    }).toList();
+
+    state = state.copyWith(problems: updated);
   }
 
   void setStepFilter(int? stepNumber) {
@@ -159,11 +252,11 @@ class DsaNotifier extends StateNotifier<DsaState> {
     }
   }
 
-  void setDifficultyFilter(DsaDifficulty? difficulty) {
-    if (difficulty == null) {
+  void setDifficultyFilter(DsaDifficulty? diff) {
+    if (diff == null) {
       state = state.copyWith(clearDifficulty: true);
     } else {
-      state = state.copyWith(selectedDifficulty: difficulty);
+      state = state.copyWith(selectedDifficulty: diff);
     }
   }
 
@@ -177,8 +270,7 @@ class DsaNotifier extends StateNotifier<DsaState> {
 
   void toggleRevisionOnlyFilter() {
     state = state.copyWith(
-      filterDueForRevisionOnly: !state.filterDueForRevisionOnly,
-    );
+        filterDueForRevisionOnly: !state.filterDueForRevisionOnly);
   }
 
   void setSearchQuery(String query) {
