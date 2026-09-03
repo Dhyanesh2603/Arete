@@ -6,6 +6,7 @@ import '../../core/theme/app_typography.dart';
 import '../providers/auth_provider.dart';
 import '../providers/command_palette_provider.dart';
 import '../providers/focus_session_provider.dart';
+import '../widgets/glass_container.dart';
 
 class AppSidebar extends ConsumerWidget {
   final String currentRoute;
@@ -24,22 +25,24 @@ class AppSidebar extends ConsumerWidget {
     final user = authState.user;
     final isFocusActive = focusState.state == FocusModeState.active;
 
-    return Container(
-      width: 280,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceTier1,
-        border: Border(
+    return GlassContainer(
+      blur: 24,
+      borderRadius: 0,
+      border: const Border(
           right: BorderSide(color: AppColors.borderSubtle, width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black45,
-            blurRadius: 20,
-            offset: Offset(4, 0),
-          ),
-        ],
-      ),
+      child: Container(
+        width: 280,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black45,
+              blurRadius: 20,
+              offset: Offset(4, 0),
+            ),
+          ],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

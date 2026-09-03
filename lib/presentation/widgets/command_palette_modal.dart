@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../providers/command_palette_provider.dart';
 import '../providers/dsa_provider.dart';
+import '../widgets/glass_container.dart';
 import '../providers/focus_session_provider.dart';
 import '../providers/projects_provider.dart';
 import '../providers/tasks_provider.dart';
@@ -226,21 +227,22 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
     return Center(
       child: Material(
         color: Colors.transparent,
-        child: Container(
-          width: 680,
-          constraints: const BoxConstraints(maxHeight: 480),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceTier1,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderActive, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.6),
-                blurRadius: 32,
-                offset: const Offset(0, 16),
-              ),
-            ],
-          ),
+        child: GlassContainer(
+          blur: 16.0,
+          borderRadius: 12.0,
+          border: Border.all(color: AppColors.borderActive, width: 1),
+          child: Container(
+            width: 680,
+            constraints: const BoxConstraints(maxHeight: 480),
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  blurRadius: 32,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

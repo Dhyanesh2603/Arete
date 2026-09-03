@@ -9,6 +9,7 @@ import '../providers/command_palette_provider.dart';
 import '../providers/focus_session_provider.dart';
 import '../widgets/app_sidebar.dart';
 import '../widgets/command_palette_modal.dart';
+import '../widgets/glass_container.dart';
 
 class ShellScaffold extends ConsumerStatefulWidget {
   final Widget child;
@@ -87,8 +88,19 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: AppColors.canvas,
-        body: Stack(
-          children: [
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(-0.8, -0.8),
+              radius: 2.0,
+              colors: [
+                AppColors.cyan.withValues(alpha: 0.15),
+                AppColors.canvas,
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
             // Main Content Area
             Column(
               children: [
@@ -151,13 +163,13 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
   }
 
   Widget _buildTopHeader(BuildContext context, dynamic user, bool isFocusActive) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceTier1,
-        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
-      ),
+    return GlassContainer(
+      blur: 24,
+      borderRadius: 0,
+      border: const Border(bottom: BorderSide(color: AppColors.borderSubtle)),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           // Slideable Menu Hamburger Button
