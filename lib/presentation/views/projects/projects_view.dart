@@ -192,6 +192,7 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
   void _showAddTaskDialog(String projectId) {
     final titleCtrl = TextEditingController();
     ProjectColumn selectedCol = ProjectColumn.backlog;
+    String selectedPriority = 'Medium';
 
     showDialog(
       context: context,
@@ -225,20 +226,65 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  DropdownButton<ProjectColumn>(
-                    value: selectedCol,
-                    dropdownColor: AppColors.surfaceTier2,
-                    items: ProjectColumn.values.map((col) {
-                      return DropdownMenuItem(
-                        value: col,
-                        child: Text(col.name.toUpperCase()),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setDialogState(() => selectedCol = val);
-                      }
-                    },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Column:', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                            const SizedBox(height: 4),
+                            DropdownButton<ProjectColumn>(
+                              value: selectedCol,
+                              isExpanded: true,
+                              dropdownColor: AppColors.surfaceTier2,
+                              items: ProjectColumn.values.map((col) {
+                                return DropdownMenuItem(
+                                  value: col,
+                                  child: Text(col.name.toUpperCase()),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setDialogState(() => selectedCol = val);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Priority:', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
+                            const SizedBox(height: 4),
+                            DropdownButton<String>(
+                              value: selectedPriority,
+                              isExpanded: true,
+                              dropdownColor: AppColors.surfaceTier2,
+                              items: ['High', 'Medium', 'Low'].map((p) {
+                                final color = p == 'High'
+                                    ? AppColors.rose
+                                    : p == 'Medium'
+                                        ? AppColors.amber
+                                        : AppColors.mint;
+                                return DropdownMenuItem(
+                                  value: p,
+                                  child: Text(p, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setDialogState(() => selectedPriority = val);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -260,7 +306,7 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
                                   projectId: projectId,
                                   title: title,
                                   column: selectedCol,
-                                  priority: 'High',
+                                  priority: selectedPriority,
                                   estimatedMinutes: 45,
                                   loggedMinutes: 0,
                                 ),

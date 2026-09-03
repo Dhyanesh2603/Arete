@@ -540,17 +540,63 @@ class MissionControlView extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: task.priority.backgroundColor,
-                        borderRadius: BorderRadius.circular(4),
+                    PopupMenuButton<TaskPriority>(
+                      tooltip: 'Change Priority',
+                      color: AppColors.surfaceTier2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: AppColors.borderSubtle),
                       ),
-                      child: Text(
-                        task.priority.label,
-                        style: AppTypography.monoBadge.copyWith(
-                          color: task.priority.color,
-                          fontSize: 9,
+                      onSelected: (newPriority) {
+                        ref.read(tasksProvider.notifier).updateTaskPriority(task.id, newPriority);
+                      },
+                      itemBuilder: (context) => TaskPriority.values.map((p) {
+                        return PopupMenuItem<TaskPriority>(
+                          value: p,
+                          height: 36,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: p.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                p.label,
+                                style: AppTypography.monoBadge.copyWith(
+                                  color: p.color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: task.priority.backgroundColor,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: task.priority.color.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              task.priority.label,
+                              style: AppTypography.monoBadge.copyWith(
+                                color: task.priority.color,
+                                fontSize: 9,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(Icons.arrow_drop_down_rounded, size: 12, color: task.priority.color),
+                          ],
                         ),
                       ),
                     ),

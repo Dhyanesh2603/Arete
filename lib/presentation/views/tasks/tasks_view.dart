@@ -17,11 +17,32 @@ class TasksView extends ConsumerStatefulWidget {
 
 class _TasksViewState extends ConsumerState<TasksView> {
   final TextEditingController _newController = TextEditingController();
+  TaskPriority _selectedAddPriority = TaskPriority.medium;
 
   @override
   void dispose() {
     _newController.dispose();
     super.dispose();
+  }
+
+  void _submitTask(TasksNotifier tasksNotifier) {
+    final val = _newController.text.trim();
+    if (val.isNotEmpty) {
+      final parsed = NaturalLanguageTaskParser.parse(val);
+      final hasExplicitPriority = RegExp(r'!high|!p0|!urgent|!med|!medium|!p1|!low|!p2', caseSensitive: false).hasMatch(val);
+      final finalPriority = hasExplicitPriority ? parsed.priority : _selectedAddPriority;
+
+      tasksNotifier.addTask(Task(
+        id: 'tk-${DateTime.now().millisecondsSinceEpoch}',
+        title: parsed.title,
+        priority: finalPriority,
+        estimatedMinutes: parsed.estimatedMinutes,
+        estimatedPomodoros: parsed.estimatedPomodoros,
+        dueDate: parsed.dueDate,
+        projectTag: parsed.projectTag,
+      ));
+      _newController.clear();
+    }
   }
 
   @override
@@ -68,9 +89,9 @@ class _TasksViewState extends ConsumerState<TasksView> {
             ),
             const SizedBox(height: 20),
 
-            // Quick Add Input Bar
+            // Quick Add Input Bar with Priority Selector & Add Button
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.surfaceTier1,
                 borderRadius: BorderRadius.circular(10),
@@ -85,26 +106,73 @@ class _TasksViewState extends ConsumerState<TasksView> {
                       controller: _newController,
                       style: AppTypography.bodyLarge.copyWith(color: AppColors.textHigh),
                       decoration: const InputDecoration(
-                        hintText: 'Add new task: e.g. Solve LeetCode 124 tomorrow #dsa !high ~45m ... Press Enter',
+                        hintText: 'Add task: e.g. Solve LeetCode 124 tomorrow #dsa ~45m ...',
                         hintStyle: TextStyle(fontSize: 13, color: AppColors.textMuted),
                         border: InputBorder.none,
                         isDense: true,
                       ),
-                      onSubmitted: (val) {
-                        if (val.trim().isNotEmpty) {
-                          final parsed = NaturalLanguageTaskParser.parse(val);
-                          tasksNotifier.addTask(Task(
-                            id: 'tk-${DateTime.now().millisecondsSinceEpoch}',
-                            title: parsed.title,
-                            priority: parsed.priority,
-                            estimatedMinutes: parsed.estimatedMinutes,
-                            estimatedPomodoros: parsed.estimatedPomodoros,
-                            dueDate: parsed.dueDate,
-                            projectTag: parsed.projectTag,
-                          ));
-                          _newController.clear();
-                        }
-                      },
+                      onSubmitted: (_) => _submitTask(tasksNotifier),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Interactive Priority Selector for New Tasks
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceTier2,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: TaskPriority.values.map((p) {
+                        final isSelected = _selectedAddPriority == p;
+                        return InkWell(
+                          onTap: () => setState(() => _selectedAddPriority = p),
+                          borderRadius: BorderRadius.circular(4),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isSelected ? p.backgroundColor : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: isSelected ? p.color : Colors.transparent,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              p.label,
+                              style: AppTypography.monoBadge.copyWith(
+                                fontSize: 10,
+                                color: isSelected ? p.color : AppColors.textMuted,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Explicit Add Button
+                  ElevatedButton.icon(
+                    onPressed: () => _submitTask(tasksNotifier),
+                    icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0B0D13)),
+                    label: Text(
+                      'ADD',
+                      style: AppTypography.monoBadge.copyWith(
+                        color: const Color(0xFF0B0D13),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.cyan,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ],
@@ -280,20 +348,65 @@ class _TasksViewState extends ConsumerState<TasksView> {
           ),
           const SizedBox(width: 12),
 
-          // Priority Badge: High (Red), Medium (Yellow), Low (Green)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: task.priority.backgroundColor,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: task.priority.color.withValues(alpha: 0.3)),
+          // Interactive Priority Selector Badge
+          PopupMenuButton<TaskPriority>(
+            tooltip: 'Change Priority',
+            color: AppColors.surfaceTier2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: AppColors.borderSubtle),
             ),
-            child: Text(
-              task.priority.label.toUpperCase(),
-              style: AppTypography.monoBadge.copyWith(
-                fontSize: 9,
-                color: task.priority.color,
-                fontWeight: FontWeight.bold,
+            onSelected: (newPriority) {
+              notifier.updateTaskPriority(task.id, newPriority);
+            },
+            itemBuilder: (context) => TaskPriority.values.map((p) {
+              return PopupMenuItem<TaskPriority>(
+                value: p,
+                height: 36,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: p.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      p.label,
+                      style: AppTypography.monoBadge.copyWith(
+                        color: p.color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: task.priority.backgroundColor,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: task.priority.color.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    task.priority.label.toUpperCase(),
+                    style: AppTypography.monoBadge.copyWith(
+                      fontSize: 9,
+                      color: task.priority.color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(Icons.arrow_drop_down_rounded, size: 14, color: task.priority.color),
+                ],
               ),
             ),
           ),

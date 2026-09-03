@@ -125,6 +125,19 @@ class TasksNotifier extends StateNotifier<TasksState> {
     }
   }
 
+  Future<void> updateTaskPriority(String taskId, TaskPriority newPriority) async {
+    final updated = state.tasks.map((t) {
+      if (t.id == taskId) {
+        return t.copyWith(priority: newPriority);
+      }
+      return t;
+    }).toList();
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
   void setPriorityFilter(TaskPriority? p) {
     if (p == null) {
       state = state.copyWith(clearPriority: true);
