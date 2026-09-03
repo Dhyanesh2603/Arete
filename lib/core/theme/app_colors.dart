@@ -2,36 +2,36 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Surface & Depth Tokens
-  static const Color canvas = Color(0xFF0B0D13); // Deep Space Slate
-  static const Color surfaceTier1 = Color(0xFF121520); // Titanium Charcoal
-  static const Color surfaceTier2 = Color(0xFF181C2B); // Dusk Surface
-  static const Color surfaceHover = Color(0xFF202538); // Muted Indigo Hover
-  static const Color surfaceGlass = Color(0xBF121520); // Glass Overlay
+  static const Color canvas = Color(0xFF15151C); // Deep Violet-Grey
+  static const Color surfaceTier1 = Color(0xFF1E1E28); // Elevated Dark Grey
+  static const Color surfaceTier2 = Color(0xFF252532); // Card Background
+  static const Color surfaceHover = Color(0xFF2C2C3D); // Hover State
+  static const Color surfaceGlass = Color(0xBF1E1E28); // Glass Overlay
 
   // Hairline Borders
-  static const Color borderSubtle = Color(0x732A3047); // 45% alpha
-  static const Color borderActive = Color(0xB33E4766); // 70% alpha
-  static const Color borderGlowCyan = Color(0x6638BDF8);
+  static const Color borderSubtle = Color(0xFF353548); // Subtle divider
+  static const Color borderActive = Color(0xFF4D4D66); // Active focus border
+  static const Color borderGlowCyan = Color(0x66A855F7); // Purple glow
 
   // Typography Tones
-  static const Color textHigh = Color(0xFFF1F5F9); // Crisp Off-White
-  static const Color textMedium = Color(0xFFCBD5E1); // Muted Silver Slate
-  static const Color textMuted = Color(0xFF8290A7); // Steel Grey
-  static const Color textSubtle = Color(0xFF4E5A72); // Navy Grey
+  static const Color textHigh = Color(0xFFFFFFFF); // Crisp White
+  static const Color textMedium = Color(0xFFD1D5DB); // Muted Silver
+  static const Color textMuted = Color(0xFF9CA3AF); // Steel Grey
+  static const Color textSubtle = Color(0xFF6B7280); // Navy Grey
 
-  // Domain & Status Signals
-  static const Color cyan = Color(0xFF38BDF8); // Active Execution & DSA Easy
-  static const Color cyanBg = Color(0xFF083344);
+  // Domain & Status Signals (Variable names kept for codebase compatibility)
+  static const Color cyan = Color(0xFFA855F7); // Electric Purple (Primary Accent)
+  static const Color cyanBg = Color(0xFF3B0764); 
 
-  static const Color mint = Color(0xFF34D399); // Solved & Habit Resilience
-  static const Color mintBg = Color(0xFF064E3B);
+  static const Color mint = Color(0xFF2DD4BF); // Bright Cyan/Teal
+  static const Color mintBg = Color(0xFF115E59);
 
-  static const Color lavender = Color(0xFF818CF8); // Goals & Strategic Milestones
-  static const Color lavenderBg = Color(0xFF1E1B4B);
+  static const Color lavender = Color(0xFFC4B5FD); // Soft Lilac
+  static const Color lavenderBg = Color(0xFF2E1065);
 
-  static const Color amber = Color(0xFFFBBF24); // Focus Mode & Medium Difficulty
+  static const Color amber = Color(0xFFFBBF24); // Warm Yellow
   static const Color amberBg = Color(0xFF451A03);
 
-  static const Color rose = Color(0xFFFB7185); // Critical Blockers & Hard Difficulty
+  static const Color rose = Color(0xFFF43F5E); // Neon Magenta
   static const Color roseBg = Color(0xFF4C0519);
 }
