@@ -282,13 +282,13 @@ class _AuthViewState extends ConsumerState<AuthView> {
                           height: 18,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.cyan.withValues(alpha: 0.6), width: 1.5),
+                            border: Border.all(color: AppColors.borderActive, width: 1.5),
                           ),
                           child: const Center(
                             child: Text(
                               'G',
                               style: TextStyle(
-                                color: AppColors.cyan,
+                                color: AppColors.textHigh,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 11,
                               ),
