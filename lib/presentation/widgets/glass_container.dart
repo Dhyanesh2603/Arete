@@ -20,7 +20,7 @@ class GlassContainer extends StatelessWidget {
     this.borderRadius = 12.0,
     this.color,
     this.border,
-    this.blur = 12.0,
+    this.blur = 32.0,
     this.constraints,
   });
 
@@ -38,7 +38,7 @@ class GlassContainer extends StatelessWidget {
             decoration: BoxDecoration(
               color: color ?? AppColors.surfaceGlass,
               borderRadius: BorderRadius.circular(borderRadius),
-              border: border ?? Border.all(color: AppColors.borderSubtle.withValues(alpha: 0.2)),
+              border: border ?? Border.all(color: AppColors.borderSubtle),
             ),
             child: child,
           ),

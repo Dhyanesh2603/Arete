@@ -88,19 +88,8 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: AppColors.canvas,
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(-0.8, -0.8),
-              radius: 2.0,
-              colors: [
-                AppColors.cyan.withValues(alpha: 0.15),
-                AppColors.canvas,
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
+        body: Stack(
+          children: [
             // Main Content Area
             Column(
               children: [
@@ -159,7 +148,7 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
           ],
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildTopHeader(BuildContext context, dynamic user, bool isFocusActive) {
