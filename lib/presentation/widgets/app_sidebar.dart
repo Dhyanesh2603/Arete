@@ -43,7 +43,7 @@ class AppSidebar extends ConsumerWidget {
             ),
           ],
         ),
-      child: Column(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
@@ -364,7 +364,7 @@ class AppSidebar extends ConsumerWidget {
           const SizedBox(height: 6),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildNavItem(

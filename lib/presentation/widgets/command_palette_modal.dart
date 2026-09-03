@@ -411,7 +411,7 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
           ),
         ),
       ),
-    );
+    ));
   }
 }
 

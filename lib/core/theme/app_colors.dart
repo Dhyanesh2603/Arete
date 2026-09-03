@@ -6,7 +6,7 @@ class AppColors {
   static const Color surfaceTier1 = Color(0xFF1E1E28); // Elevated Dark Grey
   static const Color surfaceTier2 = Color(0xFF252532); // Card Background
   static const Color surfaceHover = Color(0xFF2C2C3D); // Hover State
-  static const Color surfaceGlass = Color(0xBF1E1E28); // Glass Overlay
+  static const Color surfaceGlass = Color(0x33A855F7); // Purple Glass Overlay
 
   // Hairline Borders
   static const Color borderSubtle = Color(0xFF353548); // Subtle divider

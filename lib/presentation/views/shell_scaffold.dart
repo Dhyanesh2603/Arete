@@ -159,7 +159,7 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildTopHeader(BuildContext context, dynamic user, bool isFocusActive) {
@@ -306,6 +306,6 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
             ),
         ],
       ),
-    );
+    ));
   }
 }
