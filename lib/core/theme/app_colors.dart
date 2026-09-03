@@ -3,35 +3,35 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Surface & Depth Tokens
   static const Color canvas = Color(0xFF000000); // Pure OLED Black
-  static const Color surfaceTier1 = Color(0x1AA855F7); // 10% Light Purple Glass
-  static const Color surfaceTier2 = Color(0x26A855F7); // 15% Light Purple Glass
-  static const Color surfaceHover = Color(0x33A855F7); // 20% Light Purple Glass
-  static const Color surfaceGlass = Color(0x1AA855F7); // 10% Light Purple Glass (Matte)
+  static const Color surfaceTier1 = Color(0x38D8B4FE); // ~22% Translucent Very Light Purple Matte Card
+  static const Color surfaceTier2 = Color(0x50D8B4FE); // ~31% Translucent Light Purple (Chips / Nested)
+  static const Color surfaceHover = Color(0x66D8B4FE); // ~40% Translucent Light Purple (Hover)
+  static const Color surfaceGlass = Color(0x38D8B4FE); // Matte Frosted Light Purple Glass
 
-  // Hairline Borders
-  static const Color borderSubtle = Color(0x33A855F7); // 20% Purple border
-  static const Color borderActive = Color(0x66A855F7); // 40% Purple border
-  static const Color borderGlowCyan = Color(0x66A855F7); // Purple glow
+  // Hairline Frosted Light Purple Borders
+  static const Color borderSubtle = Color(0x55D8B4FE); // 33% Frosted Light Purple Border
+  static const Color borderActive = Color(0x99D8B4FE); // 60% Active Light Purple Border
+  static const Color borderGlowCyan = Color(0x66C084FC); // Soft Purple Glow
 
   // Typography Tones
-  static const Color textHigh = Color(0xFFFFFFFF); // Crisp White
-  static const Color textMedium = Color(0xFFE2E8F0); // Light Silver
-  static const Color textMuted = Color(0xFF94A3B8); // Muted Silver
-  static const Color textSubtle = Color(0xFF64748B); // Slate Grey
+  static const Color textHigh = Color(0xFFFFFFFF); // Crisp Pure White
+  static const Color textMedium = Color(0xFFE9D5FF); // Soft Lavender
+  static const Color textMuted = Color(0xFFA799B7); // Muted Lavender-Grey
+  static const Color textSubtle = Color(0xFF6B5E7B); // Deep Purple-Grey
 
   // Domain & Status Signals (Variable names kept for codebase compatibility)
-  static const Color cyan = Color(0xFFA855F7); // Electric Purple (Primary Accent)
-  static const Color cyanBg = Color(0xFF3B0764); 
+  static const Color cyan = Color(0xFFC084FC); // Electric Light Purple (Primary Accent)
+  static const Color cyanBg = Color(0x3DC084FC); // Translucent Light Purple Badge Fill
 
-  static const Color mint = Color(0xFF2DD4BF); // Bright Cyan/Teal
-  static const Color mintBg = Color(0xFF115E59);
+  static const Color mint = Color(0xFF2DD4BF); // Bright Teal (Solved)
+  static const Color mintBg = Color(0x2B2DD4BF);
 
-  static const Color lavender = Color(0xFFC4B5FD); // Soft Lilac
-  static const Color lavenderBg = Color(0xFF2E1065);
+  static const Color lavender = Color(0xFFE9D5FF); // Soft Lilac
+  static const Color lavenderBg = Color(0x2BE9D5FF);
 
-  static const Color amber = Color(0xFFFBBF24); // Warm Yellow
-  static const Color amberBg = Color(0xFF451A03);
+  static const Color amber = Color(0xFFFBBF24); // Warm Gold (Focus & Med)
+  static const Color amberBg = Color(0x2BFBBF24);
 
-  static const Color rose = Color(0xFFF43F5E); // Neon Magenta
-  static const Color roseBg = Color(0xFF4C0519);
+  static const Color rose = Color(0xFFF43F5E); // Neon Rose (High Priority)
+  static const Color roseBg = Color(0x2BF43F5E);
 }
