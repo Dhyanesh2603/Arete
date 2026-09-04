@@ -13,6 +13,7 @@ import 'package:arete_os/presentation/providers/calendar_provider.dart';
 import 'package:arete_os/presentation/providers/knowledge_provider.dart';
 import 'package:arete_os/domain/models/knowledge_note.dart';
 import 'package:arete_os/presentation/providers/resources_provider.dart';
+import 'package:arete_os/presentation/providers/flight_plan_provider.dart';
 import 'package:arete_os/presentation/providers/ai_coach_provider.dart';
 import 'package:arete_os/presentation/providers/auth_provider.dart';
 import 'package:arete_os/domain/models/calendar_event.dart';
@@ -240,5 +241,22 @@ void main() {
     final report = container.read(aiCoachProvider).latestReport;
     expect(report, isNotNull);
     expect(report!.assessment, isNotEmpty);
+  });
+
+  test('Adaptive Daily Flight Plan compiles sequential targets and handles completion', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final planState = container.read(flightPlanProvider);
+    expect(planState.items, isNotEmpty);
+    expect(planState.nextItem, isNotNull);
+    expect(planState.totalEstimatedMinutes, greaterThan(0));
+
+    final firstItem = planState.items.first;
+    container.read(flightPlanProvider.notifier).toggleItemCompleted(firstItem.id);
+
+    final updated = container.read(flightPlanProvider);
+    expect(updated.completedCount, equals(1));
+    expect(updated.completedIds.contains(firstItem.id), isTrue);
   });
 }

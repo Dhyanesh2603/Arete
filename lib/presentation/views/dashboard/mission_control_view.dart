@@ -9,6 +9,7 @@ import '../../providers/dsa_provider.dart';
 import '../../providers/focus_session_provider.dart';
 import '../../providers/peer_cohort_provider.dart';
 import '../../providers/tasks_provider.dart';
+import '../../widgets/daily_flight_plan_card.dart';
 import '../../widgets/invite_member_dialog.dart';
 
 class MissionControlView extends ConsumerWidget {
@@ -47,7 +48,11 @@ class MissionControlView extends ConsumerWidget {
               _buildVitalCards(context, dsaState, pendingTasks, squadState, isWide),
               const SizedBox(height: 24),
 
-              // 3. Primary Next Action & Today's Priorities
+              // 3. Adaptive Daily Flight Plan Engine
+              const DailyFlightPlanCard(),
+              const SizedBox(height: 24),
+
+              // 4. Primary Next Action & Today's Priorities
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
