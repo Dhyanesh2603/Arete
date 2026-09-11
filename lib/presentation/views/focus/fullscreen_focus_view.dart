@@ -2,16 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/soundscape_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/models/focus_session.dart';
 import '../../providers/focus_session_provider.dart';
 
-class FullscreenFocusView extends ConsumerWidget {
+class FullscreenFocusView extends ConsumerStatefulWidget {
   const FullscreenFocusView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FullscreenFocusView> createState() => _FullscreenFocusViewState();
+}
+
+class _FullscreenFocusViewState extends ConsumerState<FullscreenFocusView> {
+  double _volume = 0.5;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start active preset audio if running
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = ref.read(focusSessionProvider);
+      if (session.state == FocusModeState.active) {
+        SoundscapeService.playPreset(session.acousticPreset);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SoundscapeService.stop();
+    super.dispose();
+  }
+
+  void _onPresetChanged(AcousticPreset preset) {
+    ref.read(focusSessionProvider.notifier).setAcousticPreset(preset);
+    SoundscapeService.playPreset(preset);
+  }
+
+  void _onVolumeChanged(double val) {
+    setState(() => _volume = val);
+    SoundscapeService.setVolume(val);
+  }
+
+  void _exitFocus() {
+    SoundscapeService.stop();
+    context.go('/dashboard');
+  }
+
+  void _completeAndExit() {
+    SoundscapeService.stop();
+    ref.read(focusSessionProvider.notifier).completeSession();
+    context.go('/dashboard');
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final focusSession = ref.watch(focusSessionProvider);
     final notifier = ref.read(focusSessionProvider.notifier);
 
@@ -28,15 +75,19 @@ class FullscreenFocusView extends ConsumerWidget {
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.space) {
             notifier.togglePlayPause();
+            if (focusSession.state == FocusModeState.active) {
+              SoundscapeService.stop();
+            } else {
+              SoundscapeService.playPreset(focusSession.acousticPreset);
+            }
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.escape) {
-            context.go('/dashboard');
+            _exitFocus();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.keyD &&
               (HardwareKeyboard.instance.isMetaPressed ||
                   HardwareKeyboard.instance.isControlPressed)) {
-            notifier.completeSession();
-            context.go('/dashboard');
+            _completeAndExit();
             return KeyEventResult.handled;
           }
         }
@@ -99,66 +150,86 @@ class FullscreenFocusView extends ConsumerWidget {
                     ),
                     const SizedBox(height: 40),
 
-                    // Monospaced Timer
+                    // Massive Clean Digital Timer
                     Text(
                       timeFormatted,
                       style: AppTypography.monoTimer.copyWith(
-                        fontSize: 72,
-                        color: isPlaying ? AppColors.textHigh : AppColors.amber,
+                        fontSize: 84,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: -2.0,
+                        color: AppColors.textHigh,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 36),
 
-                    // Control Buttons
+                    // Play/Pause & Finish Controls
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: () => notifier.togglePlayPause(),
-                          icon: Icon(
-                            isPlaying
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            size: 20,
-                            color: const Color(0xFF0B0D13),
-                          ),
-                          label: Text(
-                            isPlaying ? 'PAUSE (Space)' : 'RESUME (Space)',
-                            style: AppTypography.monoBadge.copyWith(
-                              color: const Color(0xFF0B0D13),
-                              fontWeight: FontWeight.bold,
+                        // Play/Pause
+                        InkWell(
+                          onTap: () {
+                            notifier.togglePlayPause();
+                            if (focusSession.state == FocusModeState.active) {
+                              SoundscapeService.stop();
+                            } else {
+                              SoundscapeService.playPreset(focusSession.acousticPreset);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(36),
+                          child: Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.surfaceTier1,
+                              border: Border.all(
+                                color: isPlaying
+                                    ? AppColors.cyan.withValues(alpha: 0.6)
+                                    : AppColors.borderSubtle,
+                                width: 1.5,
+                              ),
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isPlaying ? AppColors.cyan : AppColors.amber,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                            child: Center(
+                              child: Icon(
+                                isPlaying
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                size: 32,
+                                color: isPlaying
+                                    ? AppColors.cyan
+                                    : AppColors.textHigh,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            notifier.completeSession();
-                            context.go('/dashboard');
-                          },
-                          icon: const Icon(Icons.check_rounded,
-                              size: 18, color: AppColors.mint),
-                          label: Text(
-                            'COMPLETE (Cmd+D)',
-                            style: AppTypography.monoBadge
-                                .copyWith(color: AppColors.mint),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: AppColors.mint.withValues(alpha: 0.4)),
+                        const SizedBox(width: 24),
+                        // Complete Session
+                        InkWell(
+                          onTap: _completeAndExit,
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                                horizontal: 18, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceTier1,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.borderSubtle),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_rounded,
+                                    size: 16, color: AppColors.mint),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'COMPLETE (Cmd+D)',
+                                  style: AppTypography.monoBadge.copyWith(
+                                    color: AppColors.mint,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -166,15 +237,14 @@ class FullscreenFocusView extends ConsumerWidget {
                     ),
                     const SizedBox(height: 48),
 
-                    // Acoustic Preset Selector
+                    // Functional Acoustic Presets & Volume Control
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceTier1,
                         borderRadius: BorderRadius.circular(10),
-                        border:
-                            Border.all(color: AppColors.borderSubtle, width: 1),
+                        border: Border.all(color: AppColors.borderSubtle),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -189,9 +259,9 @@ class FullscreenFocusView extends ConsumerWidget {
                             final isSelected =
                                 focusSession.acousticPreset == preset;
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
                               child: InkWell(
-                                onTap: () => notifier.setAcousticPreset(preset),
+                                onTap: () => _onPresetChanged(preset),
                                 borderRadius: BorderRadius.circular(4),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -220,6 +290,26 @@ class FullscreenFocusView extends ConsumerWidget {
                               ),
                             );
                           }),
+                          const SizedBox(width: 12),
+                          // Volume Slider
+                          const Icon(Icons.volume_down_rounded, size: 14, color: AppColors.textSubtle),
+                          SizedBox(
+                            width: 70,
+                            child: SliderTheme(
+                              data: SliderThemeData(
+                                trackHeight: 2,
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                                activeTrackColor: AppColors.amber,
+                                inactiveTrackColor: AppColors.surfaceTier2,
+                                thumbColor: AppColors.amber,
+                              ),
+                              child: Slider(
+                                value: _volume,
+                                onChanged: _onVolumeChanged,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -232,7 +322,7 @@ class FullscreenFocusView extends ConsumerWidget {
               top: 20,
               left: 24,
               child: InkWell(
-                onTap: () => context.go('/dashboard'),
+                onTap: _exitFocus,
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
                   padding:

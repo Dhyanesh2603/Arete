@@ -362,8 +362,231 @@ class GoalsView extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          const Divider(color: AppColors.borderSubtle, height: 1),
+          const SizedBox(height: 14),
+
+          // Milestones Header
+          Row(
+            children: [
+              Text(
+                'WEIGHTED MILESTONES (${milestones.where((m) => m.status == MilestoneStatus.completed).length}/${milestones.length})',
+                style: AppTypography.monoBadge.copyWith(fontSize: 10, color: AppColors.textMedium),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () => _showAddMilestoneDialog(context, ref, goal.id),
+                child: Row(
+                  children: [
+                    const Icon(Icons.add_rounded, size: 14, color: AppColors.cyan),
+                    const SizedBox(width: 4),
+                    Text('Add Milestone', style: AppTypography.caption.copyWith(color: AppColors.cyan, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Milestones List
+          if (milestones.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                'No milestones added yet. Break this goal down into 2-4 weighted milestones.',
+                style: AppTypography.caption.copyWith(color: AppColors.textSubtle),
+              ),
+            )
+          else
+            ...milestones.map((ms) {
+              final isDone = ms.status == MilestoneStatus.completed;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceTier2,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isDone ? AppColors.mint.withValues(alpha: 0.3) : AppColors.borderSubtle,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => ref.read(goalsProvider.notifier).toggleMilestone(ms.id),
+                      child: Icon(
+                        isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        size: 16,
+                        color: isDone ? AppColors.mint : AppColors.textSubtle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        ms.title,
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontSize: 13,
+                          color: isDone ? AppColors.textMuted : AppColors.textHigh,
+                          decoration: isDone ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceHover,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Weight: ${ms.weightMultiplier}x',
+                        style: AppTypography.monoBadge.copyWith(fontSize: 9, color: AppColors.textMuted),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 14, color: AppColors.textSubtle),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                      onPressed: () => ref.read(goalsProvider.notifier).deleteMilestone(ms.id),
+                      tooltip: 'Delete Milestone',
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
+    );
+  }
+
+  void _showAddMilestoneDialog(BuildContext context, WidgetRef ref, String goalId) {
+    final titleCtrl = TextEditingController();
+    double weight = 1.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Container(
+                width: 400,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceTier1,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderActive),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text('Add Milestone', style: AppTypography.heading2.copyWith(fontSize: 16)),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Milestone Title', style: AppTypography.caption.copyWith(color: AppColors.textMedium)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceTier2,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.borderSubtle),
+                      ),
+                      child: TextField(
+                        controller: titleCtrl,
+                        style: AppTypography.bodyMedium,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. Pass 100 Hard Dynamic Programming problems',
+                          hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text('Weight Multiplier', style: AppTypography.caption.copyWith(color: AppColors.textMedium)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [1.0, 1.5, 2.0].map((w) {
+                        final isSel = weight == w;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () => setDialogState(() => weight = w),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isSel ? AppColors.cyanBg : AppColors.surfaceTier2,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isSel ? AppColors.cyan : AppColors.borderSubtle,
+                                ),
+                              ),
+                              child: Text(
+                                '${w}x',
+                                style: AppTypography.monoBadge.copyWith(
+                                  color: isSel ? AppColors.cyan : AppColors.textMuted,
+                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: Text('Cancel', style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted)),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (titleCtrl.text.trim().isNotEmpty) {
+                              ref.read(goalsProvider.notifier).addMilestone(
+                                    goalId: goalId,
+                                    title: titleCtrl.text.trim(),
+                                    weightMultiplier: weight,
+                                    deadline: DateTime.now().add(const Duration(days: 30)),
+                                  );
+                              Navigator.of(ctx).pop();
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.cyan,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          ),
+                          child: Text(
+                            'ADD',
+                            style: AppTypography.monoBadge.copyWith(
+                              color: const Color(0xFF09090B),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

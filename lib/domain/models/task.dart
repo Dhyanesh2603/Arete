@@ -37,6 +37,30 @@ extension TaskPriorityExtension on TaskPriority {
   }
 }
 
+class SubTaskItem {
+  final String id;
+  final String title;
+  final bool isCompleted;
+
+  const SubTaskItem({
+    required this.id,
+    required this.title,
+    this.isCompleted = false,
+  });
+
+  SubTaskItem copyWith({
+    String? id,
+    String? title,
+    bool? isCompleted,
+  }) {
+    return SubTaskItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+}
+
 class Task {
   final String id;
   final String title;
@@ -52,6 +76,8 @@ class Task {
   final DateTime? dueDate;
   final DateTime? completedAt;
   final List<String> subtasks;
+  final List<SubTaskItem> subtaskItems;
+  final String? notes;
 
   const Task({
     required this.id,
@@ -68,6 +94,8 @@ class Task {
     this.dueDate,
     this.completedAt,
     this.subtasks = const [],
+    this.subtaskItems = const [],
+    this.notes,
   });
 
   Task copyWith({
@@ -85,6 +113,8 @@ class Task {
     DateTime? dueDate,
     DateTime? completedAt,
     List<String>? subtasks,
+    List<SubTaskItem>? subtaskItems,
+    String? notes,
   }) {
     return Task(
       id: id ?? this.id,
@@ -101,6 +131,8 @@ class Task {
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
       subtasks: subtasks ?? this.subtasks,
+      subtaskItems: subtaskItems ?? this.subtaskItems,
+      notes: notes ?? this.notes,
     );
   }
 }

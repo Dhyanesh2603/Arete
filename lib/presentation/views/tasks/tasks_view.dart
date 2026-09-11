@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/natural_language_parser.dart';
 import '../../../domain/models/task.dart';
 import '../../providers/focus_session_provider.dart';
 import '../../providers/tasks_provider.dart';
+import '../../widgets/task_detail_modal.dart';
 
 class TasksView extends ConsumerStatefulWidget {
   const TasksView({super.key});
@@ -290,140 +292,192 @@ class _TasksViewState extends ConsumerState<TasksView> {
   }
 
   Widget _buildTaskRow(BuildContext context, WidgetRef ref, Task task, TasksNotifier notifier) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: task.isCompleted ? AppColors.surfaceTier1.withValues(alpha: 0.4) : AppColors.surfaceTier1,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: task.isCompleted ? AppColors.mint.withValues(alpha: 0.2) : AppColors.borderSubtle,
+    final subtasks = task.subtaskItems;
+    final completedSubtasks = subtasks.where((s) => s.isCompleted).length;
+
+    return InkWell(
+      onTap: () => TaskDetailModal.show(context, task),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: task.isCompleted ? AppColors.surfaceTier1.withValues(alpha: 0.4) : AppColors.surfaceTier1,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: task.isCompleted ? AppColors.mint.withValues(alpha: 0.2) : AppColors.borderSubtle,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // Completion Checkbox
-          InkWell(
-            onTap: () => notifier.toggleTask(task.id),
-            borderRadius: BorderRadius.circular(4),
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: task.isCompleted ? AppColors.mint : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: task.isCompleted ? AppColors.mint : AppColors.borderActive,
-                  width: 1.5,
-                ),
-              ),
-              child: task.isCompleted
-                  ? const Icon(Icons.check, size: 14, color: Color(0xFF0B0D13))
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // Title & Tags
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: task.isCompleted ? AppColors.textMuted : AppColors.textHigh,
-                    decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+        child: Row(
+          children: [
+            // Completion Checkbox
+            InkWell(
+              onTap: () => notifier.toggleTask(task.id),
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: task.isCompleted ? AppColors.mint : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: task.isCompleted ? AppColors.mint : AppColors.borderActive,
+                    width: 1.5,
                   ),
                 ),
-                if (task.projectTag != null || task.milestoneTitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '${task.projectTag != null ? '#${task.projectTag}  ' : ''}${task.milestoneTitle != null ? '|  ${task.milestoneTitle}' : ''}',
-                    style: AppTypography.caption.copyWith(color: AppColors.textSubtle, fontSize: 10),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Interactive Priority Selector Badge
-          PopupMenuButton<TaskPriority>(
-            tooltip: 'Change Priority',
-            color: AppColors.surfaceTier2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: const BorderSide(color: AppColors.borderSubtle),
-            ),
-            onSelected: (newPriority) {
-              notifier.updateTaskPriority(task.id, newPriority);
-            },
-            itemBuilder: (context) => TaskPriority.values.map((p) {
-              return PopupMenuItem<TaskPriority>(
-                value: p,
-                height: 36,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: p.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      p.label,
-                      style: AppTypography.monoBadge.copyWith(
-                        color: p.color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: task.priority.backgroundColor,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: task.priority.color.withValues(alpha: 0.4)),
+                child: task.isCompleted
+                    ? const Icon(Icons.check, size: 14, color: Color(0xFF0B0D13))
+                    : null,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+            ),
+            const SizedBox(width: 14),
+
+            // Title & Tags & Subtask indicator
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    task.priority.label.toUpperCase(),
-                    style: AppTypography.monoBadge.copyWith(
-                      fontSize: 9,
-                      color: task.priority.color,
-                      fontWeight: FontWeight.bold,
+                    task.title,
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: task.isCompleted ? AppColors.textMuted : AppColors.textHigh,
+                      decoration: task.isCompleted ? TextDecoration.lineThrough : null,
                     ),
                   ),
-                  const SizedBox(width: 3),
-                  Icon(Icons.arrow_drop_down_rounded, size: 14, color: task.priority.color),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      if (task.projectTag != null || task.milestoneTitle != null) ...[
+                        Text(
+                          '${task.projectTag != null ? '#${task.projectTag}  ' : ''}${task.milestoneTitle != null ? '|  ${task.milestoneTitle}  ' : ''}',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSubtle, fontSize: 10),
+                        ),
+                      ],
+                      if (subtasks.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceTier2,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.checklist_rounded, size: 11, color: completedSubtasks == subtasks.length ? AppColors.mint : AppColors.textMuted),
+                              const SizedBox(width: 3),
+                              Text(
+                                '$completedSubtasks/${subtasks.length}',
+                                style: AppTypography.monoBadge.copyWith(
+                                  fontSize: 9,
+                                  color: completedSubtasks == subtasks.length ? AppColors.mint : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (task.dueDate != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceTier2,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today_rounded, size: 10, color: AppColors.cyan),
+                              const SizedBox(width: 3),
+                              Text(
+                                DateFormat('MMM d').format(task.dueDate!),
+                                style: AppTypography.monoBadge.copyWith(fontSize: 9, color: AppColors.cyan),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(width: 10),
+            const SizedBox(width: 12),
 
-          // Pomodoro Estimate Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
+            // Interactive Priority Selector Badge
+            PopupMenuButton<TaskPriority>(
+              tooltip: 'Change Priority',
               color: AppColors.surfaceTier2,
-              borderRadius: BorderRadius.circular(4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: AppColors.borderSubtle),
+              ),
+              onSelected: (newPriority) {
+                notifier.updateTaskPriority(task.id, newPriority);
+              },
+              itemBuilder: (context) => TaskPriority.values.map((p) {
+                return PopupMenuItem<TaskPriority>(
+                  value: p,
+                  height: 36,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: p.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        p.label,
+                        style: AppTypography.monoBadge.copyWith(
+                          color: p.color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: task.priority.backgroundColor,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: task.priority.color.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      task.priority.label.toUpperCase(),
+                      style: AppTypography.monoBadge.copyWith(
+                        fontSize: 9,
+                        color: task.priority.color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Icon(Icons.arrow_drop_down_rounded, size: 14, color: task.priority.color),
+                  ],
+                ),
+              ),
             ),
-            child: Text(
-              '${task.estimatedPomodoros} Pomos (${task.estimatedMinutes}m)',
-              style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 10),
+            const SizedBox(width: 10),
+
+            // Pomodoro Estimate Pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceTier2,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${task.estimatedPomodoros} Pomos (${task.estimatedMinutes}m)',
+                style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 10),
+              ),
             ),
-          ),
           const SizedBox(width: 8),
 
           // Start Focus Button
@@ -460,6 +514,7 @@ class _TasksViewState extends ConsumerState<TasksView> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

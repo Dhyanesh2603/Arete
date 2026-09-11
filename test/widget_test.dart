@@ -10,6 +10,8 @@ import 'package:arete_os/domain/models/project.dart';
 import 'package:arete_os/presentation/providers/tasks_provider.dart';
 import 'package:arete_os/domain/models/task.dart';
 import 'package:arete_os/presentation/providers/calendar_provider.dart';
+import 'package:arete_os/presentation/providers/goals_provider.dart';
+import 'package:arete_os/domain/models/goal.dart';
 import 'package:arete_os/presentation/providers/knowledge_provider.dart';
 import 'package:arete_os/domain/models/knowledge_note.dart';
 import 'package:arete_os/presentation/providers/resources_provider.dart';
@@ -258,5 +260,102 @@ void main() {
     final updated = container.read(flightPlanProvider);
     expect(updated.completedCount, equals(1));
     expect(updated.completedIds.contains(firstItem.id), isTrue);
+  });
+
+  test('Tasks Notifier supports subtask checklist lifecycle', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    const testTask = Task(id: 'task-sub-test', title: 'Parent Task');
+    await container.read(tasksProvider.notifier).addTask(testTask);
+
+    // 1. Add Subtask
+    await container.read(tasksProvider.notifier).addSubtask('task-sub-test', 'Child Subtask 1');
+    var task = container.read(tasksProvider).tasks.firstWhere((t) => t.id == 'task-sub-test');
+    expect(task.subtaskItems.length, equals(1));
+    expect(task.subtaskItems.first.title, equals('Child Subtask 1'));
+    expect(task.subtaskItems.first.isCompleted, isFalse);
+
+    // 2. Toggle Subtask Completion
+    final subId = task.subtaskItems.first.id;
+    await container.read(tasksProvider.notifier).toggleSubtask('task-sub-test', subId);
+    task = container.read(tasksProvider).tasks.firstWhere((t) => t.id == 'task-sub-test');
+    expect(task.subtaskItems.first.isCompleted, isTrue);
+
+    // 3. Delete Subtask
+    await container.read(tasksProvider.notifier).deleteSubtask('task-sub-test', subId);
+    task = container.read(tasksProvider).tasks.firstWhere((t) => t.id == 'task-sub-test');
+    expect(task.subtaskItems, isEmpty);
+  });
+
+  test('Goals Notifier manages milestones and dynamically updates weighted progress', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container.read(goalsProvider.notifier).createGoal(
+      identityTitle: 'Systems Architect',
+      title: 'Master Distributed Systems',
+      objectiveStatement: 'Build high-throughput event logs',
+      targetDeadline: DateTime.now().add(const Duration(days: 60)),
+      priority: GoalPriority.p0Critical,
+    );
+
+    final goal = container.read(goalsProvider).goals.first;
+    expect(goal.weightedProgress, equals(0.0));
+
+    // 1. Add 2 Milestones (Weight 1.0 and Weight 2.0 -> total 3.0)
+    await container.read(goalsProvider.notifier).addMilestone(
+      goalId: goal.id,
+      title: 'Milestone 1',
+      weightMultiplier: 1.0,
+      deadline: DateTime.now().add(const Duration(days: 15)),
+    );
+    await container.read(goalsProvider.notifier).addMilestone(
+      goalId: goal.id,
+      title: 'Milestone 2',
+      weightMultiplier: 2.0,
+      deadline: DateTime.now().add(const Duration(days: 30)),
+    );
+
+    var milestones = container.read(goalsProvider).getMilestonesForGoal(goal.id);
+    expect(milestones.length, equals(2));
+
+    // 2. Toggle Milestone 2 (Weight 2.0 out of 3.0 = 66.7%)
+    await container.read(goalsProvider.notifier).toggleMilestone(milestones[1].id);
+    var updatedGoal = container.read(goalsProvider).goals.firstWhere((g) => g.id == goal.id);
+    expect(updatedGoal.weightedProgress, equals(66.7));
+
+    // 3. Toggle Milestone 1 (1.0 + 2.0 = 3.0 / 3.0 = 100%)
+    await container.read(goalsProvider.notifier).toggleMilestone(milestones[0].id);
+    updatedGoal = container.read(goalsProvider).goals.firstWhere((g) => g.id == goal.id);
+    expect(updatedGoal.weightedProgress, equals(100.0));
+  });
+
+  test('Projects Notifier supports deleting tasks from Kanban board', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container.read(projectsProvider.notifier).createProject(
+      title: 'Compiler Project',
+      goalTitle: 'Master Languages',
+      architectureMarkdown: '# AST Specs',
+      deadline: DateTime.now().add(const Duration(days: 30)),
+    );
+
+    final project = container.read(projectsProvider).first;
+    const pTask = ProjectTask(
+      id: 'pt-1',
+      projectId: 'proj-temp',
+      title: 'Write Lexer',
+      column: ProjectColumn.backlog,
+    );
+    await container.read(projectsProvider.notifier).addProjectTask(project.id, pTask);
+
+    var current = container.read(projectsProvider).firstWhere((p) => p.id == project.id);
+    expect(current.tasks.length, equals(1));
+
+    await container.read(projectsProvider.notifier).deleteProjectTask(project.id, 'pt-1');
+    current = container.read(projectsProvider).firstWhere((p) => p.id == project.id);
+    expect(current.tasks, isEmpty);
   });
 }

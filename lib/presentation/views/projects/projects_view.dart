@@ -534,6 +534,33 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
                               style: AppTypography.caption
                                   .copyWith(color: AppColors.textMuted)),
                         ],
+                        const SizedBox(height: 6),
+                        Builder(builder: (context) {
+                          final total = currentProject.tasks.length;
+                          final done = currentProject.tasks.where((t) => t.column == ProjectColumn.completed).length;
+                          final pct = total == 0 ? 0.0 : done / total;
+                          return Row(
+                            children: [
+                              SizedBox(
+                                width: 140,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: pct,
+                                    backgroundColor: AppColors.surfaceTier2,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.mint),
+                                    minHeight: 4,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$done / $total Tasks Completed (${(pct * 100).toInt()}%)',
+                                style: AppTypography.caption.copyWith(fontSize: 10, color: AppColors.textMuted),
+                              ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -687,6 +714,16 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
                                           color: AppColors.cyan),
                                     ),
                                   ],
+                                  const SizedBox(width: 6),
+                                  IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 12, color: AppColors.textSubtle),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                    onPressed: () {
+                                      notifier.deleteProjectTask(project.id, task.id);
+                                    },
+                                    tooltip: 'Delete task',
+                                  ),
                                 ],
                               ),
                             ],

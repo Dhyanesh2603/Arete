@@ -110,6 +110,18 @@ class ProjectsNotifier extends StateNotifier<List<Project>> {
     await _persist(updated);
   }
 
+  Future<void> deleteProjectTask(String projectId, String taskId) async {
+    final updated = state.map((p) {
+      if (p.id == projectId) {
+        final remaining = p.tasks.where((t) => t.id != taskId).toList();
+        return p.copyWith(tasks: remaining);
+      }
+      return p;
+    }).toList();
+    state = updated;
+    await _persist(updated);
+  }
+
   Future<void> moveTask(
       String projectId, String taskId, ProjectColumn targetColumn) async {
     final updated = state.map((p) {

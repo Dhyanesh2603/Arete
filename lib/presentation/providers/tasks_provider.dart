@@ -138,6 +138,90 @@ class TasksNotifier extends StateNotifier<TasksState> {
     }
   }
 
+  Future<void> addSubtask(String taskId, String title) async {
+    if (title.trim().isEmpty) return;
+    final newSubtask = SubTaskItem(
+      id: 'st-${DateTime.now().millisecondsSinceEpoch}',
+      title: title.trim(),
+      isCompleted: false,
+    );
+    final updated = state.tasks.map((t) {
+      if (t.id == taskId) {
+        final currentItems = List<SubTaskItem>.from(t.subtaskItems);
+        currentItems.add(newSubtask);
+        return t.copyWith(subtaskItems: currentItems);
+      }
+      return t;
+    }).toList();
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> toggleSubtask(String taskId, String subtaskId) async {
+    final updated = state.tasks.map((t) {
+      if (t.id == taskId) {
+        final currentItems = t.subtaskItems.map((s) {
+          if (s.id == subtaskId) {
+            return s.copyWith(isCompleted: !s.isCompleted);
+          }
+          return s;
+        }).toList();
+        return t.copyWith(subtaskItems: currentItems);
+      }
+      return t;
+    }).toList();
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> deleteSubtask(String taskId, String subtaskId) async {
+    final updated = state.tasks.map((t) {
+      if (t.id == taskId) {
+        final currentItems = t.subtaskItems.where((s) => s.id != subtaskId).toList();
+        return t.copyWith(subtaskItems: currentItems);
+      }
+      return t;
+    }).toList();
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
+  Future<void> updateTaskDetails(
+    String taskId, {
+    String? title,
+    TaskPriority? priority,
+    int? estimatedMinutes,
+    DateTime? dueDate,
+    String? notes,
+    String? projectTag,
+    int? estimatedPomodoros,
+  }) async {
+    final updated = state.tasks.map((t) {
+      if (t.id == taskId) {
+        return t.copyWith(
+          title: title ?? t.title,
+          priority: priority ?? t.priority,
+          estimatedMinutes: estimatedMinutes ?? t.estimatedMinutes,
+          dueDate: dueDate ?? t.dueDate,
+          notes: notes ?? t.notes,
+          projectTag: projectTag ?? t.projectTag,
+          estimatedPomodoros: estimatedPomodoros ?? t.estimatedPomodoros,
+        );
+      }
+      return t;
+    }).toList();
+    state = state.copyWith(tasks: updated);
+    if (_currentUserId != null) {
+      await SupabaseService.saveUserTasks(_currentUserId!, updated);
+    }
+  }
+
   void setPriorityFilter(TaskPriority? p) {
     if (p == null) {
       state = state.copyWith(clearPriority: true);

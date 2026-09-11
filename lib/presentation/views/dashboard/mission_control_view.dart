@@ -11,6 +11,7 @@ import '../../providers/peer_cohort_provider.dart';
 import '../../providers/tasks_provider.dart';
 import '../../widgets/daily_flight_plan_card.dart';
 import '../../widgets/invite_member_dialog.dart';
+import '../../widgets/task_detail_modal.dart';
 
 class MissionControlView extends ConsumerWidget {
   const MissionControlView({super.key});
@@ -507,15 +508,18 @@ class MissionControlView extends ConsumerWidget {
             )
           else
             ...pendingTasks.take(4).map((task) {
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceTier2,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.borderSubtle),
-                ),
-                child: Row(
+              return InkWell(
+                onTap: () => TaskDetailModal.show(context, task),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceTier2,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.borderSubtle),
+                  ),
+                  child: Row(
                   children: [
                     InkWell(
                       onTap: () {
@@ -617,8 +621,9 @@ class MissionControlView extends ConsumerWidget {
                     ),
                   ],
                 ),
-              );
-            }),
+              ),
+            );
+          }),
         ],
       ),
     );
