@@ -57,7 +57,8 @@ class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
   }
 
   String _getRouteTitle(String route) {
-    if (route.startsWith('/dashboard')) return 'Mission Control Dashboard';
+    if (route.startsWith('/dashboard')) return 'Workspace Home';
+    if (route.startsWith('/pages')) return 'Workspace Document';
     if (route.startsWith('/dsa')) return 'Striver A2Z DSA Tracker';
     if (route.startsWith('/cohort')) return 'Study Squad';
     if (route.startsWith('/tasks')) return 'Unified Task Matrix';

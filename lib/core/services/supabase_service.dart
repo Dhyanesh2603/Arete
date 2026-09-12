@@ -7,6 +7,7 @@ import '../../domain/models/habit.dart';
 import '../../domain/models/knowledge_note.dart';
 import '../../domain/models/task.dart';
 import '../../domain/models/user_profile.dart';
+import '../../domain/models/workspace_page.dart';
 import '../utils/auth_redirect.dart';
 
 class SupabaseService {
@@ -488,5 +489,29 @@ class SupabaseService {
       'last30DaysHistory': h.last30DaysHistory,
     }).toList();
     await prefs.setString('arete_user_${userId}_habits', jsonEncode(jsonList));
+  }
+
+  // ==========================================
+  // PER-USER WORKSPACE PAGES (Notion Canvas)
+  // ==========================================
+
+  static Future<List<WorkspacePage>> fetchUserWorkspacePages(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('arete_user_${userId}_pages');
+    if (raw == null) return [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((item) {
+        return WorkspacePage.fromJson(item as Map<String, dynamic>);
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveUserWorkspacePages(String userId, List<WorkspacePage> pages) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = pages.map((p) => p.toJson()).toList();
+    await prefs.setString('arete_user_${userId}_pages', jsonEncode(jsonList));
   }
 }

@@ -9,6 +9,7 @@ import '../widgets/glass_container.dart';
 import '../providers/focus_session_provider.dart';
 import '../providers/projects_provider.dart';
 import '../providers/tasks_provider.dart';
+import '../providers/workspace_provider.dart';
 import '../../domain/models/task.dart';
 
 class CommandPaletteModal extends ConsumerStatefulWidget {
@@ -44,11 +45,26 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
     final dsaState = ref.watch(dsaProvider);
     final projects = ref.watch(projectsProvider);
     final tasksState = ref.watch(tasksProvider);
+    final workspacePages = ref.watch(workspaceProvider);
     final query = paletteState.query.toLowerCase().trim();
 
     final List<_CommandItem> items = [];
 
     // System Actions
+    items.add(_CommandItem(
+      title: 'Create New Workspace Document',
+      subtitle: 'Opens Notion-style modular canvas with slash commands',
+      category: 'ACTIONS',
+      shortcut: 'Cmd+N',
+      onSelect: () async {
+        ref.read(commandPaletteProvider.notifier).close();
+        final doc = await ref.read(workspaceProvider.notifier).createPage();
+        if (context.mounted) {
+          context.go('/pages/${doc.id}');
+        }
+      },
+    ));
+
     items.add(_CommandItem(
       title: 'Start 45m Deep Work Focus Session',
       subtitle: 'Launches full-screen focus mode with 40Hz acoustic preset',
@@ -76,8 +92,8 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
 
     // Navigation Targets
     items.add(_CommandItem(
-      title: 'Navigate to Mission Control Dashboard',
-      subtitle: 'HUD, Concentric vector rings & Hero Next Action',
+      title: 'Navigate to Workspace Home',
+      subtitle: 'Flight plan, priority queue & pinned documents',
       category: 'NAVIGATION',
       shortcut: 'Cmd+1',
       onSelect: () {
@@ -167,6 +183,21 @@ class _CommandPaletteModalState extends ConsumerState<CommandPaletteModal> {
         context.go('/resources');
       },
     ));
+
+    // Matching Workspace Documents
+    for (final doc in workspacePages) {
+      if (query.isEmpty || doc.title.toLowerCase().contains(query)) {
+        items.add(_CommandItem(
+          title: 'Document: ${doc.title.isEmpty ? "Untitled Document" : doc.title}',
+          subtitle: '${doc.blocks.length} blocks • Notion Canvas',
+          category: 'DOCUMENTS',
+          onSelect: () {
+            ref.read(commandPaletteProvider.notifier).close();
+            context.go('/pages/${doc.id}');
+          },
+        ));
+      }
+    }
 
     // Matching Projects
     for (final p in projects) {

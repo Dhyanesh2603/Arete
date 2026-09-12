@@ -20,6 +20,7 @@ import '../views/resources/resources_view.dart';
 import '../views/settings/settings_view.dart';
 import '../views/shell_scaffold.dart';
 import '../views/tasks/tasks_view.dart';
+import '../views/workspace/workspace_page_view.dart';
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -110,6 +111,15 @@ List<RouteBase> _buildRoutes() {
           pageBuilder: (context, state) => const NoTransitionPage(
             child: MissionControlView(),
           ),
+        ),
+        GoRoute(
+          path: '/pages/:id',
+          pageBuilder: (context, state) {
+            final pageId = state.pathParameters['id'] ?? '';
+            return NoTransitionPage(
+              child: WorkspacePageView(pageId: pageId),
+            );
+          },
         ),
         GoRoute(
           path: '/dsa',

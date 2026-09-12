@@ -20,6 +20,8 @@ import 'package:arete_os/presentation/providers/ai_coach_provider.dart';
 import 'package:arete_os/presentation/providers/auth_provider.dart';
 import 'package:arete_os/domain/models/calendar_event.dart';
 import 'package:arete_os/domain/models/learning_resource.dart';
+import 'package:arete_os/domain/models/workspace_page.dart';
+import 'package:arete_os/presentation/providers/workspace_provider.dart';
 import 'package:arete_os/core/utils/natural_language_parser.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -357,5 +359,112 @@ void main() {
     await container.read(projectsProvider.notifier).deleteProjectTask(project.id, 'pt-1');
     current = container.read(projectsProvider).firstWhere((p) => p.id == project.id);
     expect(current.tasks, isEmpty);
+  });
+
+  test('WorkspaceNotifier creates, updates, pins, and deletes Notion-style pages', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    // Initial state is clean slate
+    expect(container.read(workspaceProvider), isEmpty);
+
+    // 1. Create page
+    final page = await container.read(workspaceProvider.notifier).createPage(
+      title: 'Distributed Systems Spec',
+      icon: 'terminal',
+    );
+    expect(container.read(workspaceProvider).length, equals(1));
+    expect(page.title, equals('Distributed Systems Spec'));
+    expect(page.icon, equals('terminal'));
+    expect(page.isPinned, isFalse);
+
+    // 2. Update title & icon & pin
+    await container.read(workspaceProvider.notifier).updatePageTitle(page.id, 'Raft Consensus');
+    await container.read(workspaceProvider.notifier).updatePageIcon(page.id, 'storage');
+    await container.read(workspaceProvider.notifier).togglePin(page.id);
+
+    final updated = container.read(workspaceProvider.notifier).getPage(page.id);
+    expect(updated, isNotNull);
+    expect(updated!.title, equals('Raft Consensus'));
+    expect(updated.icon, equals('storage'));
+    expect(updated.isPinned, isTrue);
+
+    // 3. Delete page
+    await container.read(workspaceProvider.notifier).deletePage(page.id);
+    expect(container.read(workspaceProvider), isEmpty);
+  });
+
+  test('WorkspaceNotifier manages PageBlocks (adds, checks todo, updates content, deletes)', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final page = await container.read(workspaceProvider.notifier).createPage(
+      title: 'Project Roadmap',
+    );
+
+    // Add heading
+    await container.read(workspaceProvider.notifier).addBlock(
+      page.id,
+      PageBlockType.heading1,
+      content: 'Phase 1: Foundation',
+    );
+
+    // Add todo item
+    await container.read(workspaceProvider.notifier).addBlock(
+      page.id,
+      PageBlockType.todoItem,
+      content: 'Write benchmark suite',
+    );
+
+    var current = container.read(workspaceProvider.notifier).getPage(page.id)!;
+    // Initial 1 block + 2 added blocks = 3 blocks
+    expect(current.blocks.length, equals(3));
+
+    final todoBlock = current.blocks.firstWhere((b) => b.type == PageBlockType.todoItem);
+    expect(todoBlock.isChecked, isFalse);
+
+    // Check todo
+    await container.read(workspaceProvider.notifier).toggleBlockCheck(page.id, todoBlock.id);
+    current = container.read(workspaceProvider.notifier).getPage(page.id)!;
+    final updatedTodo = current.blocks.firstWhere((b) => b.id == todoBlock.id);
+    expect(updatedTodo.isChecked, isTrue);
+
+    // Delete block
+    await container.read(workspaceProvider.notifier).deleteBlock(page.id, todoBlock.id);
+    current = container.read(workspaceProvider.notifier).getPage(page.id)!;
+    expect(current.blocks.length, equals(2));
+  });
+
+  test('WorkspaceNotifier supports nested subpages hierarchy', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final parent = await container.read(workspaceProvider.notifier).createPage(
+      title: 'Engineering Wiki',
+    );
+
+    final child1 = await container.read(workspaceProvider.notifier).createPage(
+      parentId: parent.id,
+      title: 'Backend Architecture',
+    );
+
+    final child2 = await container.read(workspaceProvider.notifier).createPage(
+      parentId: parent.id,
+      title: 'Frontend Guidelines',
+    );
+    expect(child1.parentId, equals(parent.id));
+    expect(child2.parentId, equals(parent.id));
+
+    final roots = container.read(workspaceProvider.notifier).rootPages;
+    expect(roots.length, equals(1));
+    expect(roots.first.id, equals(parent.id));
+
+    final subpages = container.read(workspaceProvider.notifier).getChildren(parent.id);
+    expect(subpages.length, equals(2));
+    expect(subpages.map((s) => s.title), containsAll(['Backend Architecture', 'Frontend Guidelines']));
+
+    // Deleting parent deletes all descendants recursively
+    await container.read(workspaceProvider.notifier).deletePage(parent.id);
+    expect(container.read(workspaceProvider), isEmpty);
   });
 }

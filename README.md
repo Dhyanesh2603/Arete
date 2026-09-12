@@ -1,8 +1,8 @@
 # Arete
 
-### Unified Productivity Platform for Engineering & Deep Work
+### Modular Notion-Grade Productivity Workspace & Engineering Platform
 
-Arete is an integrated cognitive productivity and technical mastery platform designed for software engineers, founders, and technical professionals. It bridges the gap between long-term career milestones and daily, zero-friction execution.
+Arete is a modular, high-performance productivity workspace and technical execution platform designed for software engineers, builders, and technical professionals. It integrates modular document editing, task matrices, deep work acoustics, and technical curriculum mastery into a singular, cohesive cockpit.
 
 Built on Flutter Web (CanvasKit / WebAssembly), Riverpod 2.x, and Supabase.
 
@@ -10,63 +10,66 @@ Built on Flutter Web (CanvasKit / WebAssembly), Riverpod 2.x, and Supabase.
 
 ## Executive Overview
 
-Most productivity applications isolate tasks, calendars, and technical curricula into disconnected silos, forcing developers to manage cognitive overhead and decision fatigue. 
+Most productivity suites isolate notes, roadmaps, task queues, and technical curricula into disconnected silos, forcing developers to manage constant context switching and cognitive fatigue.
 
-Arete unifies technical study (Striver A2Z DSA Tracker with Spaced Repetition), deep work immersion (Distraction-Free Focus sessions), task management (Weighted Priority Matrix), and automated daily planning into a cohesive execution environment.
+Arete unifies Notion-grade modular documents, Striver A2Z DSA curriculum with spaced repetition, hardware-accelerated deep work focus sessions, weighted milestone roadmaps, and an adaptive daily flight plan into a frictionless execution environment.
 
 ```
-[ Strategic Goals ] -> [ Weighted Milestones ] -> [ Daily Flight Plan ] -> [ Deep Work Focus ] -> [ Telemetry & Review ]
+[ Workspace Documents ] <-> [ Priority Matrix ] <-> [ Daily Flight Plan ] <-> [ Deep Work Focus ] <-> [ Striver DSA Track ]
 ```
 
 ---
 
 ## Core Platform Capabilities
 
-### 1. Adaptive Daily Execution Engine ("Flight Plan")
-- **Automated Sequence Synthesis**: Dynamically links overdue SM-2 spaced repetition DSA problems, top-priority tasks, and scheduled calendar blocks into a single ordered daily queue.
-- **Zero-Decision Execution**: One-click flight plan execution loads the next target item directly into the Focus immersion timer without context switching.
-- **Real-Time Progress Metrics**: Visualizes target time allocation, sequential step progress, and completion states.
+### 1. Notion-Style Modular Document Studio
+- **Block-Based Document Canvas**: Flexible document blocks including Paragraphs, Heading 1, Heading 2, Interactive Checklists, Syntax Code Containers, Callout Notes, Accordion Toggles, and Dividers.
+- **Slash Command Menu (`/`)**: Instant block insertion and formatting directly from the keyboard without breaking typing flow.
+- **Document Customization**: Custom cover gradients (Obsidian, Cyan Indigo, Emerald Teal, Amber Rose, Violet Dusk) and subpixel vector iconography.
+- **Hierarchical Document Trees**: Multi-tier nested child subpages with instant navigation and breadcrumbs.
+- **Workspace Navigation**: Dedicated document tree in the sidebar with quick page creation, favorites, and pin toggles.
 
-### 2. Striver A2Z DSA Mastery & Spaced Repetition
-- **Canonical 18-Step Curriculum**: Complete coverage from foundational data structures to advanced graphs, dynamic programming, and tries.
+### 2. Adaptive Daily Execution Engine ("Flight Plan")
+- **Automated Sequence Synthesis**: Dynamically links overdue SM-2 spaced repetition DSA problems, top-priority tasks, and scheduled calendar blocks into a single ordered daily queue.
+- **Zero-Decision Execution**: One-click flight plan execution loads the next target item directly into the Focus immersion timer without friction.
+- **Real-Time Progress Radar**: Visualizes target time allocation, sequential step progress, and completion states.
+
+### 3. Integrated Striver A2Z DSA Mastery Track
+- **Canonical 18-Step Curriculum**: Complete curriculum coverage from foundational data structures to advanced graphs, dynamic programming, and tries.
 - **SuperMemo-2 (SM-2) Algorithmic Retention**: Calculates optimal review intervals based on difficulty and recall accuracy to prevent memory decay.
 - **Socratic Hint Engine**: Multi-tiered hints (Structural, Recurrence, and Edge Cases) that guide problem-solving without revealing full solutions prematurely.
 - **Mock Technical Interview Simulations**: Timed live problem environments testing algorithmic communication and time/space complexity analysis.
 
-### 3. Distraction-Free Deep Work Immersion
+### 4. Distraction-Free Deep Work Immersion
 - **Hardware-Accelerated Focus Shell**: Clean, high-contrast fullscreen interface designed to eliminate visual distractions.
 - **Keyboard-Driven Session Controls**: Complete keyboard binding support (`Space` to toggle pause/resume, `Cmd+D`/`Ctrl+D` to complete, `ESC` to exit).
-- **Acoustic Presets**: Integrated soundscape profiles including 40Hz Gamma waves, Deep Brown Noise, and Terminal Hum.
+- **Procedural Acoustic Synthesizer**: Web Audio soundscapes including 40Hz Gamma binaural waves, Deep Brown Noise, Rain Wash, and Terminal Hum.
 
-### 4. Unified Task Matrix
-- **Tri-Tier Priority Queue**: Categorized into High (Rose), Medium (Amber), and Low (Mint) tiers.
+### 5. Unified Priority Task Matrix
+- **Tri-Tier Priority Queue**: Categorized into High (Neon Rose), Medium (Golden Amber), and Low (Emerald Mint) tiers.
 - **Natural Language Parsing**: Instant extraction of priority tags (`!high`, `!med`, `!low`), duration estimates (`~45m`, `~2h`), and project tags (`#dsa`, `#system`) from single-line text inputs.
-- **In-Place Priority Management**: Upfront priority selector chips on creation and inline dropdown selectors on task cards across dashboard and matrix views.
+- **Task Modals & Subtasks**: Subtask checklists, due date pickers, calendar blocking, and inline priority management.
 
-### 5. Strategic Goals & Weighted Milestones
+### 6. Strategic Goals & Projects Kanban
 - **Identity-Driven Milestones**: Decompose strategic multi-month goals into actionable, weighted milestone deliverables.
-- **Progress Computation**: Dynamic progress calculation reflecting completed milestones and habit consistency.
-
-### 6. Life Telemetry & Velocity Analytics
-- **Consistency Vectors**: 30-day trailing habit consistency tracking.
-- **Velocity Metrics**: Quantitative measurement of daily focus hours, solve counts, and milestone completion velocity.
+- **Linear-Style Kanban Boards**: Drag-and-drop workflow columns with architecture specs.
+- **Life Telemetry**: Quantitative measurement of daily focus hours, solve counts, and milestone completion velocity.
 - **Clean Slate Architecture**: Zero hardcoded mock stats. The platform initializes cleanly at zero for authentic personal progression.
 
 ### 7. Global Command Deck (`Cmd+K`)
-- **Instant Keyboard Navigation**: Access any roadmap step, problem, task, or view from anywhere in the platform via `Cmd+K` or `Ctrl+K`.
+- **Instant Keyboard Navigation**: Search documents, navigate roadmap steps, trigger deep work focus, or create new pages instantly via `Cmd+K` or `Ctrl+K`.
 
 ---
 
 ## Design System & Ergonomics
 
-Arete features a balanced, eye-friendly dark aesthetic engineered for long engineering sessions:
+Arete features a bespoke **Obsidian Carbon & Titanium Ice** aesthetic engineered for ultra-smooth 60/120fps interactions and zero eye fatigue:
 
-- **Canvas**: Pure Deep Neutral Black (`#09090B`) delivering high OLED contrast without glare.
-- **Surfaces**: Neutral Dark Charcoal (`#131316` and `#1B1B20`) eliminating monochromatic eye fatigue.
-- **Hairline Dividers**: Subtle 1px neutral borders (`#222228`) for crisp component definition.
-- **Typography**: Clean Off-White (`#FAFAFA`) primary headings and Cool Silver Gray (`#A1A1AA`) body text.
-- **Accent Philosophy**: Electric Violet (`#8B5CF6`) strictly reserved for primary actions, active indicators, and progress highlights.
-- **Semantic Domain Colors**: Emerald Green (`#10B981`) for solved problems, Golden Amber (`#F59E0B`) for streaks and focus, Crimson Coral (`#EF4444`) for high-priority items, and Indigo (`#6366F1`) for strategic milestones.
+- **Canvas**: Deep Obsidian Void (`#08090C`) delivering true dark contrast without visual glare.
+- **Sidebar**: Carbon Deep (`#0D0E12`) with categorized WORKSPACE, DOCUMENTS, and ENGINES tiers.
+- **Surfaces**: Multi-Tier Graphite Slate (`#12141A` and `#181B23`) with subpixel titanium hairline borders (`#1E222D`).
+- **Typography**: Titanium White (`#F8FAFC`) primary headings and Cool Slate (`#94A3B8`) readable body text.
+- **Accent Philosophy**: Electric Ice Cyan (`#38BDF8`) for primary highlights, Precision Indigo (`#6366F1`) for document structures, Emerald Green (`#10B981`) for completed states, and Golden Amber (`#F59E0B`) for focus immersion.
 
 ---
 
@@ -89,15 +92,16 @@ Arete features a balanced, eye-friendly dark aesthetic engineered for long engin
 lib/
 ├── core/
 │   ├── constants/       # Canonical Striver A2Z curriculum data and topics
-│   ├── services/        # Supabase client and persistence abstractions
-│   ├── theme/           # AppColors, AppTypography, AppTheme definitions
+│   ├── services/        # Supabase client and per-user persistence abstractions
+│   ├── theme/           # Obsidian Carbon AppColors, AppTypography, AppTheme
 │   └── utils/           # Natural language task parser and utilities
 ├── domain/
-│   └── models/          # Task, DsaProblem, FlightPlanItem, Habit, CalendarEvent
+│   └── models/          # WorkspacePage, PageBlock, Task, DsaProblem, Habit, Project
 └── presentation/
-    ├── providers/       # Riverpod state notifiers (DSA, Tasks, Focus, FlightPlan)
-    ├── views/           # MissionControl, DsaRoadmap, Tasks, Focus, Analytics, Auth
-    └── widgets/         # DailyFlightPlanCard, AppSidebar, CommandPalette, GlassContainer
+    ├── navigation/      # GoRouter declarative app routes (/pages/:id, /dashboard, etc.)
+    ├── providers/       # Riverpod state notifiers (Workspace, DSA, Tasks, Focus, FlightPlan)
+    ├── views/           # WorkspacePageView, MissionControlView, TasksView, FocusView
+    └── widgets/         # AppSidebar, DailyFlightPlanCard, CommandPaletteModal, GlassContainer
 ```
 
 ---
@@ -139,25 +143,16 @@ flutter build web --release
 The output bundle will be generated in `build/web/`. You can serve it locally using any static HTTP server:
 
 ```bash
-python -m http.server 8080 --directory build/web
+cd build/web
+python -m http.server 8080
 ```
 
 ---
 
-## Verification & Testing
+## Automated Test Suite
 
-The project maintains a continuous quality verification suite:
+Arete includes a comprehensive automated test suite verifying auth state, task matrix operations, SM-2 retention calculations, weighted milestone goals, and Notion-style workspace page trees:
 
 ```bash
-# Run unit and widget tests
 flutter test
-
-# Run static analysis
-flutter analyze
 ```
-
----
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).

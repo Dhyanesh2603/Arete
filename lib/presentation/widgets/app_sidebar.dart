@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/models/workspace_page.dart';
 import '../providers/auth_provider.dart';
 import '../providers/command_palette_provider.dart';
 import '../providers/focus_session_provider.dart';
+import '../providers/workspace_provider.dart';
 import '../widgets/glass_container.dart';
 
 class AppSidebar extends ConsumerWidget {
@@ -167,38 +169,23 @@ class AppSidebar extends ConsumerWidget {
           // Navigation Links
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               children: [
+                _buildSectionHeader('WORKSPACE'),
                 _buildNavItem(
                   context,
                   icon: Icons.dashboard_outlined,
                   activeIcon: Icons.dashboard_rounded,
-                  title: 'Mission Control',
-                  subtitle: 'Daily command HUD',
+                  title: 'Workspace Home',
+                  subtitle: 'Daily flight plan & radar',
                   route: '/dashboard',
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.code_rounded,
-                  activeIcon: Icons.code_rounded,
-                  title: 'DSA Roadmap',
-                  subtitle: 'Striver A2Z Sheet (0/455)',
-                  route: '/dsa',
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.groups_outlined,
-                  activeIcon: Icons.groups_rounded,
-                  title: 'Study Squad',
-                  subtitle: 'Peer progress & accountability',
-                  route: '/cohort',
                 ),
                 _buildNavItem(
                   context,
                   icon: Icons.checklist_rounded,
                   activeIcon: Icons.checklist_rounded,
                   title: 'Tasks & Matrix',
-                  subtitle: 'High/Med/Low priority',
+                  subtitle: 'High/Med/Low priority queue',
                   route: '/tasks',
                 ),
                 _buildNavItem(
@@ -206,7 +193,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.view_kanban_outlined,
                   activeIcon: Icons.view_kanban_rounded,
                   title: 'Projects & Kanban',
-                  subtitle: 'Linear-style boards',
+                  subtitle: 'Linear-style roadmaps',
                   route: '/projects',
                 ),
                 _buildNavItem(
@@ -214,8 +201,86 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.calendar_month_outlined,
                   activeIcon: Icons.calendar_month_rounded,
                   title: 'Calendar',
-                  subtitle: 'Monthly schedule & blocks',
+                  subtitle: 'Time blocking & schedule',
                   route: '/calendar',
+                ),
+
+                const SizedBox(height: 6),
+                _buildSectionHeader(
+                  'DOCUMENTS',
+                  trailing: InkWell(
+                    onTap: () async {
+                      final newPage = await ref.read(workspaceProvider.notifier).createPage();
+                      if (context.mounted) {
+                        onClose();
+                        context.go('/pages/${newPage.id}');
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.cyanBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_rounded, size: 12, color: AppColors.cyan),
+                          const SizedBox(width: 2),
+                          Text('New', style: AppTypography.monoBadge.copyWith(color: AppColors.cyan, fontSize: 9)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Dynamic Workspace Pages Tree
+                Builder(
+                  builder: (ctx) {
+                    final allPages = ref.watch(workspaceProvider);
+                    if (allPages.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Text(
+                          'No documents yet. Click + to create one.',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSubtle, fontSize: 11),
+                        ),
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _buildPageTree(context, ref, allPages, null, 0),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 6),
+                _buildSectionHeader('SPECIALTY ENGINES'),
+                _buildNavItem(
+                  context,
+                  icon: Icons.timer_outlined,
+                  activeIcon: Icons.timer_rounded,
+                  title: 'Deep Work Focus',
+                  subtitle: 'Audio synthesizer & timer',
+                  route: '/focus',
+                  isPulseGlow: isFocusActive,
+                ),
+                _buildNavItem(
+                  context,
+                  icon: Icons.code_rounded,
+                  activeIcon: Icons.code_rounded,
+                  title: 'Striver DSA Track',
+                  subtitle: 'Curriculum & SM-2 review',
+                  route: '/dsa',
+                ),
+                _buildNavItem(
+                  context,
+                  icon: Icons.groups_outlined,
+                  activeIcon: Icons.groups_rounded,
+                  title: 'Study Squad',
+                  subtitle: 'Peer accountability cohort',
+                  route: '/cohort',
                 ),
                 _buildNavItem(
                   context,
@@ -227,19 +292,10 @@ class AppSidebar extends ConsumerWidget {
                 ),
                 _buildNavItem(
                   context,
-                  icon: Icons.timer_outlined,
-                  activeIcon: Icons.timer_rounded,
-                  title: 'Deep Work Focus',
-                  subtitle: 'Immersion timer',
-                  route: '/focus',
-                  isPulseGlow: isFocusActive,
-                ),
-                _buildNavItem(
-                  context,
                   icon: Icons.flag_outlined,
                   activeIcon: Icons.flag_rounded,
                   title: 'Strategic Goals',
-                  subtitle: 'Long-term milestones',
+                  subtitle: 'Milestones & OKRs',
                   route: '/goals',
                 ),
                 _buildNavItem(
@@ -247,7 +303,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.menu_book_outlined,
                   activeIcon: Icons.menu_book_rounded,
                   title: 'Knowledge Base',
-                  subtitle: 'Markdown notes',
+                  subtitle: 'Markdown research notes',
                   route: '/knowledge',
                 ),
                 _buildNavItem(
@@ -263,7 +319,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.auto_awesome_outlined,
                   activeIcon: Icons.auto_awesome_rounded,
                   title: 'AI Coach',
-                  subtitle: 'Evening retrospective',
+                  subtitle: 'Retrospectives & insights',
                   route: '/coach',
                 ),
                 _buildNavItem(
@@ -271,7 +327,7 @@ class AppSidebar extends ConsumerWidget {
                   icon: Icons.analytics_outlined,
                   activeIcon: Icons.analytics_rounded,
                   title: 'Life Telemetry',
-                  subtitle: 'Velocity curves',
+                  subtitle: 'Velocity & completion graphs',
                   route: '/analytics',
                 ),
               ],
@@ -444,5 +500,154 @@ class AppSidebar extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildSectionHeader(String title, {Widget? trailing}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 6, top: 12, bottom: 4),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: AppTypography.monoBadge.copyWith(
+              color: AppColors.textSubtle,
+              fontSize: 10,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+
+  IconData _resolvePageIcon(String iconKey) {
+    switch (iconKey) {
+      case 'code':
+        return Icons.code_rounded;
+      case 'terminal':
+        return Icons.terminal_rounded;
+      case 'bookmark':
+        return Icons.bookmark_border_rounded;
+      case 'folder':
+        return Icons.folder_outlined;
+      case 'school':
+        return Icons.school_outlined;
+      case 'target':
+        return Icons.adjust_rounded;
+      case 'rocket':
+        return Icons.rocket_launch_outlined;
+      case 'bolt':
+        return Icons.bolt_rounded;
+      case 'storage':
+        return Icons.storage_rounded;
+      case 'psychology':
+        return Icons.psychology_outlined;
+      case 'tune':
+        return Icons.tune_rounded;
+      case 'star':
+        return Icons.star_border_rounded;
+      case 'checklist':
+        return Icons.checklist_rounded;
+      case 'menu_book':
+        return Icons.menu_book_outlined;
+      case 'article':
+      default:
+        return Icons.article_outlined;
+    }
+  }
+
+  List<Widget> _buildPageTree(
+    BuildContext context,
+    WidgetRef ref,
+    List<WorkspacePage> allPages,
+    String? parentId,
+    int depth,
+  ) {
+    final children = allPages.where((p) => p.parentId == parentId).toList();
+    final widgets = <Widget>[];
+
+    for (final page in children) {
+      final pageRoute = '/pages/${page.id}';
+      final isActive = currentRoute == pageRoute;
+      final subpages = allPages.where((p) => p.parentId == page.id).toList();
+
+      widgets.add(
+        Padding(
+          padding: EdgeInsets.only(left: (depth * 14.0) + 4, right: 4, top: 1, bottom: 1),
+          child: InkWell(
+            onTap: () {
+              onClose();
+              if (currentRoute != pageRoute) {
+                context.go(pageRoute);
+              }
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.surfaceHover : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isActive ? AppColors.cyan.withValues(alpha: 0.3) : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _resolvePageIcon(page.icon),
+                    size: 15,
+                    color: isActive ? AppColors.cyan : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      page.title.isEmpty ? 'Untitled Document' : page.title,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isActive ? AppColors.cyan : AppColors.textHigh,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                        fontSize: 12.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (page.isPinned)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(Icons.push_pin_rounded, size: 12, color: AppColors.cyan),
+                    ),
+                  InkWell(
+                    onTap: () async {
+                      final sub = await ref.read(workspaceProvider.notifier).createPage(
+                            parentId: page.id,
+                            title: 'Subpage',
+                          );
+                      if (context.mounted) {
+                        onClose();
+                        context.go('/pages/${sub.id}');
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: const Padding(
+                      padding: EdgeInsets.all(2),
+                      child: Icon(Icons.add_rounded, size: 14, color: AppColors.textSubtle),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      if (subpages.isNotEmpty) {
+        widgets.addAll(_buildPageTree(context, ref, allPages, page.id, depth + 1));
+      }
+    }
+
+    return widgets;
   }
 }
